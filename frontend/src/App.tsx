@@ -1,5 +1,7 @@
 import { useMeta } from "./api/hooks";
 import Sidebar from "./components/Sidebar";
+import { ModeSwitch } from "./components/controls/ModeSwitch";
+import { RampSwitch } from "./components/controls/RampSwitch";
 import MapView from "./components/map/MapView";
 import { formatDate } from "./lib/format";
 
@@ -27,7 +29,10 @@ export default function App() {
           </span>
         )}
         {meta.isError && <span className="text-sm text-[var(--accent)]">Could not reach the server.</span>}
-        {/* Sam's controls (Harmonized or Raw, ramp) go at the right end of the header. */}
+        <div className="ml-auto flex items-center gap-3">
+          <ModeSwitch />
+          <RampSwitch />
+        </div>
       </header>
       <main className="flex min-h-0 flex-1">
         <section aria-label="Map" className="relative min-w-0 flex-1 bg-black">
