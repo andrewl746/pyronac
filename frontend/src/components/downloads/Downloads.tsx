@@ -74,7 +74,7 @@ export function Downloads() {
   } else {
     const comparedMonth = defaultMonth ? formatMonthYear(defaultMonth.year, defaultMonth.month) : "";
     body = (
-      <div className="flex flex-col gap-3">
+      <div className="no-print flex flex-col gap-3">
         <fieldset className="m-0 flex flex-wrap items-center gap-2 border-0 p-0 text-xs">
           <legend className="sr-only">Dates for the hot spot download</legend>
           <label className="flex items-center gap-1.5">
@@ -169,7 +169,8 @@ export function Downloads() {
   return (
     <section aria-labelledby="downloads-heading" className="flex flex-col gap-2 text-sm">
       <h2 id="downloads-heading" className="text-sm font-semibold">
-        Downloads
+        <span className="no-print">Downloads</span>
+        <span className="print-only">Method</span>
       </h2>
       {body}
       {meta.data && <MethodNote harmonization={meta.data.harmonization} />}
