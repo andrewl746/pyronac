@@ -43,7 +43,9 @@ def compare_stats(target: float, history: list[float]) -> dict:
         "rank": 1 + int((values > target).sum()),
         "of": len(values) + 1,
         "percentile": percentile,
-        "label": label_for(percentile),
+        # A target exactly at the median is normal by definition, whatever the percentile says.
+        # Without this, a month with no fire where no fire is usual reads as "well below normal".
+        "label": "near normal" if target == median else label_for(percentile),
     }
 
 

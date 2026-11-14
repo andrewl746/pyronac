@@ -16,6 +16,7 @@ type Props = {
   period: string;
   loading: boolean;
   failed: boolean;
+  note?: string; // for example why the scale is fixed during the time-lapse
 };
 
 const STOPS = [0.15, 0.5, 0.8, 1];
@@ -26,7 +27,7 @@ function stopLabel(value: number): string {
 }
 
 // Bottom left of the map: what the red hatching means, with real counts.
-export default function Legend({ max, step, period, loading, failed }: Props) {
+export default function Legend({ max, step, period, loading, failed, note }: Props) {
   const backgrounds = useMemo(() => {
     const ratio = Math.min(2, Math.max(1, Math.round(window.devicePixelRatio || 1)));
     return [0, 1, 2].map((level) => hatchCssBackground(level, ratio));
@@ -41,6 +42,7 @@ export default function Legend({ max, step, period, loading, failed }: Props) {
       <div className="mb-1 font-semibold text-[var(--text)]">Hot spots per cell</div>
       <div className="mb-2 text-[var(--text-dim)]">
         {period} · cells {step / 10}° wide, harmonized counts
+        {note && <span className="mt-1 block text-[var(--accent)]">{note}</span>}
       </div>
       {max > 0 ? (
         <ul className="flex items-end justify-between gap-2">

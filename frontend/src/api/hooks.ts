@@ -31,11 +31,16 @@ export function useCompare(
   });
 }
 
+// useGrid's query key. The time-lapse preloads months with it, so the map then reads them from the cache.
+export function gridKey(bbox: Bbox | null, start: string, end: string, step?: number) {
+  return ["grid", bbox, start, end, step] as const;
+}
+
 // start and end are "YYYY-MM", both included. Leave step out and the backend picks one.
 // The previous answer stays on screen while the next one loads, so the map does not flash.
 export function useGrid(bbox: Bbox | null, start: string, end: string, step?: number) {
   return useQuery({
-    queryKey: ["grid", bbox, start, end, step],
+    queryKey: gridKey(bbox, start, end, step),
     queryFn: bbox ? () => api.grid(bbox, start, end, step) : skipToken,
     placeholderData: keepPreviousData,
   });

@@ -187,7 +187,7 @@ export const mock = {
         rank: sorted.filter((v) => v > target.harmonized).length + 1,
         of: sorted.length + 1,
         percentile,
-        label: labelFor(percentile),
+        label: target.harmonized === median ? "near normal" : labelFor(percentile),
       },
       history,
     };

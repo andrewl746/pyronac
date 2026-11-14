@@ -17,10 +17,13 @@ Satellites have recorded fires as "hot spots" since 2000, first with MODIS and s
 VIIRS, which has smaller pixels and reports several times more hot spots for the same fire. Counted
 as reported, Canada's fire record jumps about fivefold between 2011 and 2012 although nothing changed
 on the ground. Pyronac harmonizes the two records into one, on the scale of VIIRS on Suomi NPP, and
-shows it as a calendar of burning activity from 2003 to this month for any area the user picks on a
-globe. On six years the method never saw, the typical error of a monthly total falls from about 80%
-for raw MODIS to about 14% after harmonization. An emergency manager can ask "is this October
-unusual here?" and get an answer that does not depend on which satellite was flying.
+shows it as a calendar of burning activity from 2003 to 2025 for any area the user picks on a globe.
+On six years the method never saw, the typical error of a monthly total falls from about 80% for raw
+MODIS to about 14% after harmonization. An emergency manager can ask "is this October unusual here?"
+and get an answer that does not depend on which satellite was flying.
+
+**TODO (Yuvi, Andrew L):** change "2003 to 2025" to "2003 to this month" only when real 2026 data
+is served and checked in the app.
 
 ## Link to project demo
 
@@ -29,7 +32,7 @@ needs no login. Going over either limit makes the project ineligible for global 
 
 ## Link to final project
 
-- Repository: https://github.com/andrewl746/pyronac **TODO:** confirm it is public before submitting.
+- Repository: https://github.com/andrewl746/pyronac (public, checked Saturday 12:25).
 - Live site: **TODO**, only if the deploy extra is done. Otherwise leave it out.
 
 ## Detailed description
@@ -38,22 +41,33 @@ needs no login. Going over either limit makes the project ineligible for global 
 
 - **Pick an area.** The app opens on a globe with burned cells marked. The user clicks a preset such
   as the Northwest Territories, types latitude and longitude, or draws a box.
-- **Read the calendar.** One row per year and one column per month, 2003 to 2026. Colour shows how
+- **Read the calendar.** One row per year and one column per month, 2003 to 2025
+  (**TODO:** 2026 once it is served and checked). Colour shows how
   many hot spots, on a log scale, with a legend in real counts. Big fire years such as 2014 and 2023
   stand out.
 - **See the problem and the fix.** A switch flips between "Harmonized" and "Raw". In raw mode the
   years from 2012 on look several times busier than the years before, because of the sensor change.
   In harmonized mode that false jump is gone.
 - **Compare a month with its history.** A panel puts any month beside the same calendar month in
-  every other year: the median, the usual range, the rank, and a sentence such as "October 2026 was
-  61% above the usual October here".
-- **Follow the second handoff.** Suomi NPP stopped delivering data on 2 November 2026. From November
-  2026 the record continues on NOAA-20, scaled by a ratio measured while both satellites flew.
+  every other year: the median, the usual range, the rank, and a sentence such as "July 2023 was
+  1,244% above the usual July here" for the Northwest Territories.
+- **TODO (Yuvi, Andrew L): the second handoff.** Suomi NPP stopped delivering data on 2 November
+  2026. The method for carrying the record on with NOAA-20 is built and its ratio is measured
+  (0.997 over April 2018 to October 2025), but the app serves data only through 31 December 2025.
+  Do not claim that the record continues across the handoff until real November 2026 data is built,
+  served and checked in the app. Then replace this bullet with: "Follow the second handoff. From
+  November 2026 the record continues on NOAA-20, scaled by a ratio measured while both satellites
+  flew."
 - **Take the data away.** The hot spots for the area and dates download as a CSV, the calendar as a
   CSV, and the calendar and the comparison chart as PNG images.
 
-**TODO (Sam):** add the trend chart, the plain-language summary and the anomaly map here if they are
-in the final build.
+- **See what is unusual on the map.** An "Anomaly" view colours each cell by how unusual the selected
+  month is against the same calendar month in other years.
+
+**TODO (Sam):** add the trend chart and the plain-language summary here once they are merged (pull
+request #27). The wording must follow the real numbers: for all of Canada, 2003 to 2025, both
+records rise, the harmonized one by 83% a decade and the raw one by 129%. So say that the raw record
+overstates the rise, not that harmonizing removes it.
 
 ### How it works
 
@@ -66,7 +80,8 @@ in the final build.
   October 2026 the record is Suomi NPP as observed. Before that, a gradient boosting model estimates
   what Suomi NPP would have reported from what MODIS saw (count, fire radiative power, place, season
   and neighbouring cells). Where the model has no estimate, a ratio per 1 degree block and calendar
-  month is used. From November 2026 the record is NOAA-20 times a handoff ratio.
+  month is used. From November 2026 the record is designed to be NOAA-20 times a handoff ratio
+  (**TODO:** not yet checked on a real month, see above).
 - **App.** A Python pipeline with DuckDB writes Parquet tables. A FastAPI server reads them. The
   frontend is React and TypeScript with a MapLibre globe.
 
@@ -90,15 +105,17 @@ absolute percentage error of Canada's totals.
 - Fire managers and researchers get one consistent record of more than two decades instead of two
   records that cannot be compared.
 - "Unusual" is measured against the same place and the same calendar month, on the same scale.
-- The record does not break when a satellite retires. The move from Suomi NPP to NOAA-20 in
-  November 2026 is handled the same way as the move from MODIS to VIIRS.
+- The record is built not to break when a satellite stops delivering data. Suomi NPP stopped
+  delivering data on 2 November 2026, and the move to NOAA-20 is handled the same way as the move
+  from MODIS to VIIRS. **TODO (Yuvi, Andrew L):** keep this bullet only once real November 2026
+  data is served and checked.
 - The method is simple to explain and its error is measured and shown in the app.
 
 ### Accessibility
 
 - Two colour ramps, both readable with colour vision deficiency (inferno and cividis).
-- Every value is available as a number: legends with real counts, tooltips on hover and on keyboard
-  focus, a table view of the calendar, and a sentence for the comparison.
+- Every value is available as a number: legends with real counts, tooltips on hover (and on
+  keyboard focus in the calendar), a table view of the calendar, and a sentence for the comparison.
 - Everything works by keyboard, with a visible focus ring. Text contrast is at least 4.5 to 1.
 
 ### Tools and languages
@@ -111,15 +128,16 @@ Tailwind CSS, d3-scale-chromatic, Zustand, TanStack Query.
 The form calls this "SI". Source: `docs/AI_USE.md`, which has one row per working session with the
 time, the person, the tool, what it produced and how it was checked.
 
-- AI coding assistants (Claude Code) wrote most of the code and the first drafts of the
-  documentation, including this text, working from a specification the team wrote.
+- AI coding assistants (Claude Code and OpenAI Codex) wrote most of the code and the first drafts
+  of the documentation, including this text, working from a specification the team wrote.
 - The idea, the choice of method and the decisions between options are the team's.
 - No images, video or audio were made with AI. **TODO:** change this line if that stops being true;
   anything of that kind needs a visible watermark.
 - Nothing AI-generated contains NASA logos, flags or mission identifiers.
 
 **TODO (everyone):** check `docs/AI_USE.md` has a row from every teammate (check E2), then copy a
-short version of it here.
+short version of it here. On Saturday 13:00 it had rows from everyone except Yuvi, all naming
+Claude Code. Yuvi's use of OpenAI Codex is stated in pull request #18 and still needs its row.
 
 ## NASA data
 
