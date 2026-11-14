@@ -130,7 +130,18 @@ def load(con, data_dir, keep_grid_counts=False):
             FROM g GROUP BY 1, 2, 3, 4
         ),
         country_month AS (SELECT country, year, month, sum(modis_count) AS country_month FROM g GROUP BY 1, 2, 3),
-        country_year AS (SELECT country, year, sum(modis_count) AS country_year FROM g GROUP BY 1, 2)
+        country_year AS (SELECT country, year, sum(modis_count) AS country_year FROM g GROUP BY 1, 2),
+        -- The MODIS count of the month before and after, 0 when that month has no row. A window, not
+        -- two self-joins: with two, DuckDB joins them to each other on the cell alone and runs out of disk.
+        around AS (
+            SELECT cell_x, cell_y, year, month,
+                   CASE WHEN lag(month_index) OVER w = month_index - 1 THEN lag(modis_count) OVER w ELSE 0 END
+                       AS prev_count,
+                   CASE WHEN lead(month_index) OVER w = month_index + 1 THEN lead(modis_count) OVER w ELSE 0 END
+                       AS next_count
+            FROM g
+            WINDOW w AS (PARTITION BY cell_x, cell_y ORDER BY month_index)
+        )
         SELECT
             g.country, g.cell_x, g.cell_y, g.year, g.month, g.ym, g.block_x, g.block_y,
             g.snpp_count,
@@ -141,16 +152,14 @@ def load(con, data_dir, keep_grid_counts=False):
             (g.cell_x + 0.5) / 10.0 AS lon,
             near.near_8, near.near_24,
             block.block_modis, country_month.country_month, country_year.country_year,
-            coalesce(p.modis_count, 0) AS prev_count,
-            coalesce(n.modis_count, 0) AS next_count,
+            around.prev_count, around.next_count,
             d.terra_count, d.aqua_count, d.day_count, d.night_count, d.high_count, d.frp_max, d.active_days
         FROM g
         JOIN near USING (cell_x, cell_y, year, month)
         JOIN block USING (block_x, block_y, year, month)
         JOIN country_month USING (country, year, month)
         JOIN country_year USING (country, year)
-        LEFT JOIN g p ON p.cell_x = g.cell_x AND p.cell_y = g.cell_y AND p.month_index = g.month_index - 1
-        LEFT JOIN g n ON n.cell_x = g.cell_x AND n.cell_y = g.cell_y AND n.month_index = g.month_index + 1
+        JOIN around USING (cell_x, cell_y, year, month)
         LEFT JOIN modis_detail d USING (cell_x, cell_y, year, month)
         WHERE g.modis_count > 0
         """
