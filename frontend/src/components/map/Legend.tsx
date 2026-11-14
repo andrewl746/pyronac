@@ -8,7 +8,7 @@ import {
   tintOpacity,
   valueAt,
 } from "./fire";
-import { formatCount } from "./labels";
+import { formatCount } from "../../lib/format";
 
 type Props = {
   max: number; // the largest cell value in view
@@ -19,6 +19,11 @@ type Props = {
 };
 
 const STOPS = [0.15, 0.5, 0.8, 1];
+
+// Legend stops fall between real counts, so show whole numbers once they reach 10.
+function stopLabel(value: number): string {
+  return formatCount(value >= 10 ? Math.round(value) : value);
+}
 
 // Bottom left of the map: what the red hatching means, with real counts.
 export default function Legend({ max, step, period, loading, failed }: Props) {
@@ -53,7 +58,7 @@ export default function Legend({ max, step, period, loading, failed }: Props) {
                 }}
               />
               <span className="tabular-nums text-[var(--text)]">
-                {t === 1 ? formatCount(max) : formatCount(valueAt(t, max))}
+                {t === 1 ? formatCount(max) : stopLabel(valueAt(t, max))}
               </span>
             </li>
           ))}

@@ -4,6 +4,7 @@
 import type { FeatureCollection, MultiLineString, Polygon } from "geojson";
 import type { GeoJSONSource, Map as MapLibreMap } from "maplibre-gl";
 import type { GridResponse } from "../../api/types";
+import { scaleValue } from "../../lib/colors";
 import { cellsToGeoJSON, type CellProperties } from "../../lib/geo";
 
 export const FIRE_RED = "#ff3131";
@@ -21,13 +22,7 @@ const SOURCE_CELLS = "fire-cells";
 const SOURCE_OUTLINE = "fire-outline";
 export const LAYER_FILL = "fire-hatch";
 
-// Same formula as scaleValue in src/lib/colors.ts (Sam, MASTERSPEC.md section 8):
-// counts are very uneven, so intensity follows a log scale. 0 for value <= 0, else 0..1.
-export function scaleValue(value: number, max: number): number {
-  if (value <= 0 || max <= 0) return 0;
-  return Math.min(1, Math.log1p(value) / Math.log1p(max));
-}
-
+// Counts are very uneven, so intensity follows scaleValue (a log scale) from lib/colors.ts.
 // The count at a given intensity: the inverse of scaleValue, for the legend.
 export function valueAt(t: number, max: number): number {
   return Math.expm1(t * Math.log1p(max));

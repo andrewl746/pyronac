@@ -1,15 +1,7 @@
 import { useMeta } from "./api/hooks";
 import Sidebar from "./components/Sidebar";
 import MapView from "./components/map/MapView";
-
-const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
-
-// "2026-11-06" -> "6 Nov 2026"
-function shortDate(iso: string): string {
-  const [year, month, day] = iso.split("-").map(Number);
-  if (!year || !month || !day) return iso;
-  return `${day} ${MONTHS[month - 1]} ${year}`;
-}
+import { formatDate } from "./lib/format";
 
 // Layout from MASTERSPEC.md section 8: header, the map on the left, the sidebar on the right.
 export default function App() {
@@ -23,7 +15,7 @@ export default function App() {
         </h1>
         {meta.data && (
           <span className="tabular-nums text-sm text-[var(--text-dim)]">
-            data through {shortDate(meta.data.data_through)}
+            data through {formatDate(meta.data.data_through)}
           </span>
         )}
         {meta.data?.data_source === "fixtures" && (
