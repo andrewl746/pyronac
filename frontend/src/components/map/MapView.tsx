@@ -1,25 +1,33 @@
 import * as maplibregl from "maplibre-gl";
 import "maplibre-gl/dist/maplibre-gl.css";
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useGrid } from "../../api/hooks";
-import { WORLD } from "../../lib/geo";
+import type { Bbox } from "../../api/types";
+import { snapBbox, WORLD } from "../../lib/geo";
 import { useStore } from "../../state/store";
 import { BASEMAP, FIRST_LABEL_LAYER } from "./basemap";
 import { addFireLayers, LAYER_FILL, setFireData } from "./fire";
 import { formatCount, mapPeriod } from "./labels";
 import Legend from "./Legend";
 import "./map.css";
+import { addSelectionLayers, setSelectedBox, useDrawBox } from "./selection";
 
 // The opening view from MASTERSPEC.md section 8: the globe, centred over Canada.
 const START = { center: [-100, 55] as [number, number], zoom: 1.8 };
 // With no box selected the map asks for the whole world in 1 degree cells.
 const WORLD_STEP = 10;
 
+function reducedMotion(): boolean {
+  return window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+}
+
 export default function MapView() {
   const containerRef = useRef<HTMLDivElement>(null);
   const [map, setMap] = useState<maplibregl.Map | null>(null);
+  const [drawing, setDrawing] = useState(false);
 
   const bbox = useStore((s) => s.bbox);
+  const setBbox = useStore((s) => s.setBbox);
   const startYear = useStore((s) => s.startYear);
   const endYear = useStore((s) => s.endYear);
   const selected = useStore((s) => s.selected);
@@ -43,6 +51,7 @@ export default function MapView() {
     instance.on("style.load", () => {
       instance.setProjection({ type: "globe" });
       addFireLayers(instance, FIRST_LABEL_LAYER);
+      addSelectionLayers(instance, FIRST_LABEL_LAYER);
       setMap(instance);
     });
     // Fold the attribution into its (i) button once the sources have added their credits,
@@ -63,10 +72,41 @@ export default function MapView() {
     if (map) setFireData(map, grid.data);
   }, [map, grid.data]);
 
+  // Outline the selected box and fit the map to it. Clearing the box goes back to the globe.
+  const hadBox = useRef(false);
+  useEffect(() => {
+    if (!map) return;
+    setSelectedBox(map, bbox);
+    const animate = !reducedMotion();
+    if (bbox) {
+      map.fitBounds(
+        [
+          [bbox.west, bbox.south],
+          [bbox.east, bbox.north],
+        ],
+        { padding: 64, maxZoom: 10, animate, duration: 1400 },
+      );
+    } else if (hadBox.current) {
+      map.flyTo({ center: START.center, zoom: START.zoom, animate, duration: 1400 });
+    }
+    hadBox.current = bbox !== null;
+  }, [map, bbox]);
+
+  // Draw area: the drawn box is snapped, then goes to the store like every other box.
+  const finishDrawing = useCallback(
+    (box: Bbox) => {
+      setDrawing(false);
+      setBbox(snapBbox(box));
+    },
+    [setBbox],
+  );
+  const cancelDrawing = useCallback(() => setDrawing(false), []);
+  useDrawBox(map, drawing, finishDrawing, cancelDrawing);
+
   // Hovering a cell shows its exact count.
   const periodLabel = period.label;
   useEffect(() => {
-    if (!map) return;
+    if (!map || drawing) return;
     const popup = new maplibregl.Popup({
       closeButton: false,
       closeOnClick: false,
@@ -89,11 +129,31 @@ export default function MapView() {
       leave.unsubscribe();
       popup.remove();
     };
-  }, [map, periodLabel]);
+  }, [map, periodLabel, drawing]);
 
   return (
     <>
       <div ref={containerRef} className="pyronac-map" />
+      <div className="absolute top-3 left-3 z-10 flex items-center gap-2">
+        <button
+          type="button"
+          aria-pressed={drawing}
+          disabled={!map}
+          onClick={() => setDrawing((d) => !d)}
+          className={`rounded-md border px-3 py-1.5 text-sm font-medium shadow-lg transition-colors disabled:opacity-50 ${
+            drawing
+              ? "border-[var(--accent)] bg-[var(--accent)] text-black"
+              : "border-[var(--border)] bg-[var(--panel)] text-[var(--text)] hover:bg-[var(--panel-2)]"
+          }`}
+        >
+          {drawing ? "Cancel drawing" : "Draw area"}
+        </button>
+        {drawing && (
+          <span role="status" className="rounded-md bg-[var(--panel)]/90 px-2 py-1 text-xs text-[var(--text-dim)]">
+            Press, drag and release on the map. Esc cancels.
+          </span>
+        )}
+      </div>
       <Legend
         max={grid.data?.max ?? 0}
         step={grid.data?.step ?? WORLD_STEP}
