@@ -43,7 +43,8 @@ def test_compare_stats_nothing_anywhere():
     assert result["percent"] is None
     assert result["rank"] == 1  # nothing is strictly above
     assert result["percentile"] == 0.0  # nothing is strictly below
-    assert result["label"] == "well below normal"
+    # No fire where no fire is usual is normal, not "well below normal".
+    assert result["label"] == "near normal"
 
 
 def test_compare_stats_ties_use_strict_comparisons():
@@ -52,6 +53,29 @@ def test_compare_stats_ties_use_strict_comparisons():
     assert result["percentile"] == 0.0
     assert result["absolute"] == 0.0
     assert result["percent"] == 0.0
+    assert result["label"] == "near normal"
+
+
+def test_compare_stats_target_at_the_median_is_near_normal():
+    # A quiet month where most years are quiet: the median is 0 and so is the target,
+    # even though some years had fire. The percentile alone would say "well below normal".
+    result = compare_stats(0, [0, 0, 0, 0, 0, 3, 4])
+    assert result["median"] == 0.0
+    assert result["percentile"] == 0.0
+    assert result["rank"] == 3
+    assert result["label"] == "near normal"
+
+    # The same away from zero: only 1 of 7 years is strictly below, which alone would say "below normal".
+    result = compare_stats(9, [9, 1, 9, 9, 9, 9, 9])
+    assert result["median"] == 9.0
+    assert result["percentile"] == 14.3
+    assert result["label"] == "near normal"
+
+
+def test_compare_stats_just_off_the_median_follows_the_percentile():
+    assert compare_stats(0, [0, 0, 1, 3, 4])["label"] == "well below normal"  # median 1
+    assert compare_stats(0.1, [0, 0, 0, 0, 0, 3, 4])["label"] == "near normal"  # percentile 71.4
+    assert compare_stats(5, [0, 0, 0, 0])["label"] == "well above normal"
 
 
 def test_compare_stats_order_of_history_does_not_matter():

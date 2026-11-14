@@ -7,12 +7,14 @@ import type { ExpressionSpecification, GeoJSONSource, Map as MapLibreMap } from 
 import type { AnomalyResponse, CompareLabel } from "../../api/types";
 import { cellsToGeoJSON } from "../../lib/geo";
 
-export const ANOMALY_CLASSES: { label: CompareLabel; color: string; opacity: number }[] = [
-  { label: "well below normal", color: "#2f6db5", opacity: 0.85 },
-  { label: "below normal", color: "#8db6e0", opacity: 0.75 },
-  { label: "near normal", color: "#e9e5dc", opacity: 0.4 },
-  { label: "above normal", color: "#f6a04d", opacity: 0.75 },
-  { label: "well above normal", color: "#e0590b", opacity: 0.85 },
+// `range` is the percentile range anomalyClass puts in each class, for the legend (section 8:
+// every coloured thing has a legend with numbers on it).
+export const ANOMALY_CLASSES: { label: CompareLabel; range: string; color: string; opacity: number }[] = [
+  { label: "well below normal", range: "10th or lower", color: "#2f6db5", opacity: 0.85 },
+  { label: "below normal", range: "10th to 25th", color: "#8db6e0", opacity: 0.75 },
+  { label: "near normal", range: "25th to 75th", color: "#e9e5dc", opacity: 0.4 },
+  { label: "above normal", range: "75th to 90th", color: "#f6a04d", opacity: 0.75 },
+  { label: "well above normal", range: "90th or higher", color: "#e0590b", opacity: 0.85 },
 ];
 
 const SOURCE = "anomaly-cells";

@@ -93,13 +93,13 @@ export function cellOutline(cells: [number, number, number][], step: number): Fe
 
 type FireCellProperties = CellProperties & { t: number };
 
-function cellsWithIntensity(grid: GridResponse): FeatureCollection<Polygon, FireCellProperties> {
+function cellsWithIntensity(grid: GridResponse, max: number): FeatureCollection<Polygon, FireCellProperties> {
   const squares = cellsToGeoJSON(grid.cells, grid.step);
   return {
     ...squares,
     features: squares.features.map((f) => ({
       ...f,
-      properties: { ...f.properties, t: scaleValue(f.properties.value, grid.max) },
+      properties: { ...f.properties, t: scaleValue(f.properties.value, max) },
     })),
   };
 }
@@ -169,10 +169,12 @@ export function addFireLayers(map: MapLibreMap, beforeId: string): void {
   );
 }
 
-export function setFireData(map: MapLibreMap, grid: GridResponse | undefined): void {
+// `max` sets the top of the intensity scale. It defaults to the largest cell in this answer; the
+// time-lapse passes one fixed value for the whole range so months compare fairly.
+export function setFireData(map: MapLibreMap, grid: GridResponse | undefined, max?: number): void {
   const cells = map.getSource<GeoJSONSource>(SOURCE_CELLS);
   const outline = map.getSource<GeoJSONSource>(SOURCE_OUTLINE);
   if (!cells || !outline) return;
-  cells.setData(grid ? cellsWithIntensity(grid) : EMPTY);
+  cells.setData(grid ? cellsWithIntensity(grid, max ?? grid.max) : EMPTY);
   outline.setData(grid ? cellOutline(grid.cells, grid.step) : EMPTY);
 }

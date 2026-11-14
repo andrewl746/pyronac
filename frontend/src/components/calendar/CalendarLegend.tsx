@@ -5,12 +5,19 @@ import type { Ramp } from "../../state/store";
 
 type Props = { max: number; ramp: Ramp };
 
-// 1, 10, 100, ... and the maximum itself.
+// 1, 10, 100, ... and the maximum itself, leaving out any that would sit on top of another label.
+const MIN_GAP = 0.13; // between two labels, as a share of the bar
+const MAX_GAP = 0.2; // room kept free for the maximum's own label
+
 function ticks(max: number): number[] {
   const values: number[] = [];
-  for (let v = 1; v < max; v *= 10) values.push(v);
-  // Drop a power of ten that would sit on top of the maximum's label.
-  if (values.length > 1 && scaleValue(values[values.length - 1], max) > 0.75) values.pop();
+  let last = -1;
+  for (let v = 1; v < max; v *= 10) {
+    const t = scaleValue(v, max);
+    if (t - last < MIN_GAP || 1 - t < MAX_GAP) continue;
+    values.push(v);
+    last = t;
+  }
   values.push(max);
   return values;
 }
@@ -25,32 +32,37 @@ export function CalendarLegend({ max, ramp }: Props) {
   }
   const stops = rampStops(ramp, 9);
   return (
-    <div className="flex items-start gap-3 text-xs" style={{ color: "var(--text-dim)" }}>
-      <div className="flex flex-col items-center gap-0.5">
-        <span
-          className="block h-3 w-5 rounded-sm"
-          style={{ background: "var(--zero-cell)", border: "1px solid var(--border)" }}
-        />
-        <span>0</span>
-      </div>
-      <div className="flex-1">
-        <div className="h-3 rounded-sm" style={{ background: `linear-gradient(to right, ${stops.join(", ")})` }} />
-        <div className="relative h-4">
-          {ticks(max).map((value) => {
-            const t = scaleValue(value, max);
-            return (
-              <span
-                key={value}
-                className="absolute top-0.5"
-                style={{ left: `${t * 100}%`, transform: `translateX(${t > 0.95 ? "-100%" : t < 0.05 ? "0" : "-50%"})` }}
-              >
-                {formatCount(value)}
-              </span>
-            );
-          })}
+    <div className="flex flex-col gap-1 text-xs" style={{ color: "var(--text-dim)" }}>
+      <span>Hot spots per month (log scale)</span>
+      <div className="flex items-start gap-3">
+        <div className="flex flex-col items-center gap-0.5">
+          <span
+            className="block h-3 w-5 rounded-sm"
+            style={{ background: "var(--zero-cell)", border: "1px solid var(--border)" }}
+          />
+          <span>0</span>
+        </div>
+        <div className="flex-1">
+          <div className="h-3 rounded-sm" style={{ background: `linear-gradient(to right, ${stops.join(", ")})` }} />
+          <div className="relative h-4">
+            {ticks(max).map((value) => {
+              const t = scaleValue(value, max);
+              return (
+                <span
+                  key={value}
+                  className="absolute top-0.5"
+                  style={{
+                    left: `${t * 100}%`,
+                    transform: `translateX(${t > 0.95 ? "-100%" : t < 0.05 ? "0" : "-50%"})`,
+                  }}
+                >
+                  {formatCount(value)}
+                </span>
+              );
+            })}
+          </div>
         </div>
       </div>
-      <span>hot spots per month (log scale)</span>
     </div>
   );
 }

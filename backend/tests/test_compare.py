@@ -49,7 +49,8 @@ def check_against_history(data):
     assert difference["of"] == len(values) + 1
     percentile = round(100 * sum(v < target for v in values) / len(values), 1)
     assert difference["percentile"] == percentile
-    assert difference["label"] == label_for(percentile)
+    # A target exactly at the median is "near normal", whatever the percentile.
+    assert difference["label"] == ("near normal" if target == median else label_for(percentile))
 
 
 def test_fields_match_types_ts(client, box):
@@ -171,7 +172,7 @@ def test_empty_area(client):
     assert data["difference"]["percent"] is None
     assert data["difference"]["rank"] == 1
     assert data["difference"]["percentile"] == 0.0
-    assert data["difference"]["label"] == "well below normal"
+    assert data["difference"]["label"] == "near normal"  # no fire where none is usual
 
 
 def test_bbox_is_snapped_outward(client):
