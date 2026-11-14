@@ -1,0 +1,52 @@
+/* MapLibre's own controls, restyled for the dark theme. */
+.pyronac-map {
+  /* Set here, not with Tailwind: maplibre-gl.css sets position: relative outside any layer,
+     which beats Tailwind's layered utilities. */
+  position: absolute;
+  inset: 0;
+  /* Space around the globe. */
+  background: radial-gradient(ellipse at center, #0b1220 0%, #05070b 70%, #000 100%);
+}
+
+.pyronac-map .maplibregl-ctrl-group {
+  background: var(--panel);
+  border: 1px solid var(--border);
+  box-shadow: none;
+}
+
+.pyronac-map .maplibregl-ctrl-group button + button {
+  border-top: 1px solid var(--border);
+}
+
+.pyronac-map .maplibregl-ctrl-group button:not(:disabled):hover {
+  background-color: var(--panel-2);
+}
+
+/* The control icons are dark images; turn them light. */
+.pyronac-map .maplibregl-ctrl-group button .maplibregl-ctrl-icon {
+  filter: invert(1) brightness(0.9);
+}
+
+.pyronac-map .maplibregl-ctrl button:focus-visible,
+.pyronac-map .maplibregl-canvas:focus-visible {
+  outline: 2px solid var(--focus);
+  outline-offset: -2px;
+  box-shadow: none;
+}
+
+.pyronac-map .maplibregl-ctrl-attrib {
+  background: rgba(20, 24, 29, 0.85);
+  color: var(--text-dim);
+}
+
+.pyronac-map .maplibregl-ctrl-attrib a {
+  color: var(--text-dim);
+}
+
+.pyronac-map .maplibregl-ctrl-attrib.maplibregl-compact {
+  background: rgba(20, 24, 29, 0.85);
+}
+
+.pyronac-map .maplibregl-ctrl-attrib-button {
+  filter: invert(1);
+}

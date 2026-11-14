@@ -5,6 +5,8 @@ import { defineConfig } from "vite";
 // https://vite.dev/config/
 export default defineConfig({
   plugins: [react(), tailwindcss()],
+  // MapLibre 6 loads its worker from a file next to its own module, which pre-bundling would separate.
+  optimizeDeps: { exclude: ["maplibre-gl"] },
   // Frontend code calls relative paths like /api/calendar; the dev server forwards them.
   server: { proxy: { "/api": "http://localhost:8000" } },
 });

@@ -1,4 +1,5 @@
 import Sidebar from "./components/Sidebar";
+import MapView from "./components/map/MapView";
 
 // Layout from MASTERSPEC.md section 8: header, the map on the left, the sidebar on the right.
 export default function App() {
@@ -11,7 +12,7 @@ export default function App() {
       </header>
       <main className="flex min-h-0 flex-1">
         <section aria-label="Map" className="relative min-w-0 flex-1 bg-black">
-          <div className="flex h-full items-center justify-center text-[var(--text-dim)]">Map goes here</div>
+          <MapView />
         </section>
         <aside
           aria-label="Details"
