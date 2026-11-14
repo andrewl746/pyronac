@@ -1,6 +1,7 @@
 """Harmonization: put every month on the VIIRS Suomi NPP scale.
 
-Method "ratio" (MASTERSPEC.md section 6 and Andrew L's task sheet, step 2).
+Method "ml" when the model in ml_model.py can be fitted: it estimates the MODIS era cell by cell.
+Otherwise method "ratio" (MASTERSPEC.md section 6 and Andrew L's task sheet, step 2), described here.
 
 For each 1 degree block and each calendar month, the ratio of Suomi NPP to MODIS
 detections over the months when both flew. A block is used only when it has at least
@@ -108,6 +109,20 @@ def run(con, out_dir, data_through):
     # The ratios the app uses are learned on every month both instruments flew.
     learn_ratios(con, OVERLAP_FROM_YM, config.SNPP_ERA_END_YM)
     learn_handoff(con)
+
+    # The ML model replaces the ratio for the MODIS era when it can be fitted. If scikit-learn is
+    # missing or there is too little data, the ratio method is used and nothing else changes.
+    con.execute(
+        "CREATE OR REPLACE TABLE ml_estimate (cell_x INTEGER, cell_y INTEGER, year INTEGER, month INTEGER, estimate DOUBLE)"
+    )
+    ml = None
+    try:
+        import ml_model
+
+        ml = ml_model.apply(con, Path(out_dir))
+    except ImportError as error:
+        print(f"  ML model not used, keeping the ratio method: {error}")
+
     con.execute(
         f"""
         CREATE OR REPLACE TABLE grid AS
@@ -115,7 +130,8 @@ def run(con, out_dir, data_through):
             g.*,
             CAST(CASE
                 WHEN g.year * 100 + g.month <= {config.MODIS_ERA_END_YM}
-                    THEN g.modis_count * {RATIO_SQL}
+                    THEN CASE WHEN g.modis_count = 0 THEN 0
+                              ELSE coalesce(e.estimate, g.modis_count * {RATIO_SQL}) END
                 WHEN g.year * 100 + g.month <= {config.SNPP_ERA_END_YM}
                     THEN g.snpp_count
                 ELSE g.noaa20_count * coalesce(h.ratio, 1.0)
@@ -123,6 +139,8 @@ def run(con, out_dir, data_through):
         FROM grid_counts g
         {RATIO_JOINS}
         LEFT JOIN ratio_handoff h ON h.country = g.country
+        LEFT JOIN ml_estimate e ON e.cell_x = g.cell_x AND e.cell_y = g.cell_y
+                               AND e.year = g.year AND e.month = g.month
         """
     )
 
@@ -148,15 +166,28 @@ def run(con, out_dir, data_through):
     else:
         notes += "No months with both VIIRS satellites in the data, so the NOAA-20 handoff ratio is 1."
 
+    validation = result["validation"] if result else None
+    if ml:
+        notes = (
+            f"Gradient boosting model ({ml['version']}) that estimates the Suomi NPP count of a cell and month "
+            f"from what MODIS saw, learned on {ml['rows']:,d} cell-months. Where the model has no estimate the "
+            "ratio method is used. Ratio method: " + notes
+        )
+        if validation and ml["test"]:
+            validation = dict(validation)
+            validation["metric"] = validation["metric"].replace("ratios learned", "model learned")
+            validation["harmonized_error"] = round(ml["test"]["monthly"], 4)
+        print(f"  ML model used for the MODIS era: {ml['version']}")
+
     summary = {
-        "method": "ratio",
+        "method": "ml" if ml else "ratio",
         "generated_at": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
         "data_through": data_through,
         "reference": "VIIRS S-NPP 375 m",
         "handoff_ratio_noaa20": round(pooled, 4) if pooled else 1.0,
         "train_years": result["train_years"] if result else None,
         "test_years": result["test_years"] if result else None,
-        "validation": result["validation"] if result else None,
+        "validation": validation,
         "notes": notes,
     }
     (Path(out_dir) / "harmonization.json").write_text(json.dumps(summary, indent=2) + "\n", encoding="utf-8")

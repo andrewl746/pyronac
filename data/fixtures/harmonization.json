@@ -1,6 +1,6 @@
 {
-  "method": "ratio",
-  "generated_at": "2026-11-14T16:29:19Z",
+  "method": "ml",
+  "generated_at": "2026-11-14T16:36:50Z",
   "data_through": "2026-11-06",
   "reference": "VIIRS S-NPP 375 m",
   "handoff_ratio_noaa20": 0.9701,
@@ -13,9 +13,9 @@
     2025
   ],
   "validation": {
-    "metric": "median absolute percentage error of monthly totals per country, 2020 to 2025, ratios learned on 2012 to 2019",
+    "metric": "median absolute percentage error of monthly totals per country, 2020 to 2025, model learned on 2012 to 2019",
     "raw_error": 0.7753,
-    "harmonized_error": 0.175
+    "harmonized_error": 0.1567
   },
-  "notes": "Suomi NPP to MODIS ratio per 1 degree block and calendar month (17 block ratios), falling back to the country's ratio for that calendar month, then the country's overall ratio. Overall ratios: canada 4.59. NOAA-20 handoff ratios: canada 0.970."
+  "notes": "Gradient boosting model (ml count-full-careful) that estimates the Suomi NPP count of a cell and month from what MODIS saw, learned on 1,346 cell-months. Where the model has no estimate the ratio method is used. Ratio method: Suomi NPP to MODIS ratio per 1 degree block and calendar month (17 block ratios), falling back to the country's ratio for that calendar month, then the country's overall ratio. Overall ratios: canada 4.59. NOAA-20 handoff ratios: canada 0.970."
 }

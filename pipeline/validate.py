@@ -169,8 +169,12 @@ def main():
         print(f"| {row['country']} | {row['year']} | {row['modis']:,d} | {row['estimate']:,.0f} | {row['snpp']:,d} | {diff} |")
 
     path = out_dir / "harmonization.json"
-    if path.exists():
-        summary = json.loads(path.read_text(encoding="utf-8"))
+    summary = json.loads(path.read_text(encoding="utf-8")) if path.exists() else None
+    if summary and summary.get("method") != "ratio":
+        print()
+        print(f"{path.name} was built with method \"{summary.get('method')}\", so it is left alone. "
+              "The numbers above are for the ratio method.")
+    elif summary:
         summary["train_years"] = result["train_years"]
         summary["test_years"] = result["test_years"]
         summary["validation"] = v
