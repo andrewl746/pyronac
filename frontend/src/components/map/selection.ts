@@ -1,8 +1,9 @@
 // The selected box on the map, and the rectangle the user drags in draw mode (MASTERSPEC.md section 8).
 import type { Feature, FeatureCollection, Polygon } from "geojson";
 import type { GeoJSONSource, LngLat, Map as MapLibreMap, MapMouseEvent, Point } from "maplibre-gl";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import type { Bbox } from "../../api/types";
+import { crossesDateLine, dragBox } from "../../lib/geo";
 
 const ACCENT = "#ff8a3d"; // --accent in the theme
 const SOURCE_SELECTED = "selected-box";
@@ -77,24 +78,27 @@ export function setSelectedBox(map: MapLibreMap, bbox: Bbox | null): void {
   map.getSource<GeoJSONSource>(SOURCE_SELECTED)?.setData(bbox ? boxPolygon(bbox) : EMPTY);
 }
 
-function boxBetween(a: LngLat, b: LngLat): Bbox {
-  return {
-    west: Math.max(-180, Math.min(a.lng, b.lng)),
-    east: Math.min(180, Math.max(a.lng, b.lng)),
-    south: Math.max(-90, Math.min(a.lat, b.lat)),
-    north: Math.min(90, Math.max(a.lat, b.lat)),
-  };
-}
+export const DATE_LINE_PROBLEM = "A box can't cross the 180° line. Draw it on one side of the line.";
 
 // Draw mode: panning is off and the cursor is a crosshair. Press, drag and release makes a box
 // and calls onDone with it (not yet snapped). Escape calls onCancel.
+// A box across the 180° line is refused (issue #10): draw mode stays on and the hook returns a
+// message to show, until the next press or until draw mode turns off.
 // onDone and onCancel must be stable (useCallback), or the mode restarts on every render.
 export function useDrawBox(
   map: MapLibreMap | null,
   active: boolean,
   onDone: (bbox: Bbox) => void,
   onCancel: () => void,
-): void {
+): string | null {
+  const [problem, setProblem] = useState<string | null>(null);
+  // Turning draw mode on or off clears the message.
+  const [wasActive, setWasActive] = useState(active);
+  if (wasActive !== active) {
+    setWasActive(active);
+    setProblem(null);
+  }
+
   useEffect(() => {
     if (!map || !active) return;
     const canvas = map.getCanvas();
@@ -112,20 +116,23 @@ export function useDrawBox(
       e.preventDefault();
       start = { lngLat: e.lngLat.wrap(), point: e.point };
       last = start;
+      setProblem(null);
     });
     const move = map.on("mousemove", (e: MapMouseEvent) => {
       if (!start) return;
       last = { lngLat: e.lngLat.wrap(), point: e.point };
-      preview?.setData(boxPolygon(boxBetween(start.lngLat, last.lngLat)));
+      preview?.setData(boxPolygon(dragBox(start.lngLat, last.lngLat)));
     });
     const finish = () => {
       if (!start || !last) return;
       const wide = Math.abs(last.point.x - start.point.x) >= MIN_DRAG_PX;
       const tall = Math.abs(last.point.y - start.point.y) >= MIN_DRAG_PX;
-      const box = boxBetween(start.lngLat, last.lngLat);
+      const box = dragBox(start.lngLat, last.lngLat);
       start = null;
       preview?.setData(EMPTY);
-      if (wide && tall) onDone(box);
+      if (!wide || !tall) return;
+      if (crossesDateLine(box)) setProblem(DATE_LINE_PROBLEM);
+      else onDone(box);
     };
     const up = map.on("mouseup", finish);
     const onKey = (e: KeyboardEvent) => {
@@ -148,4 +155,6 @@ export function useDrawBox(
       preview?.setData(EMPTY);
     };
   }, [map, active, onDone, onCancel]);
+
+  return problem;
 }

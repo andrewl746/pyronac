@@ -56,3 +56,24 @@ export function cellsToGeoJSON(
     }),
   };
 }
+
+type Corner = { lng: number; lat: number };
+
+// The box a drag between two corners covers, going the short way round in longitude, so a drag
+// from 178°E to 178°W is 4° wide, not 356°. When the drag crosses the 180° line, west comes out
+// below -180 or east above 180: check with crossesDateLine.
+export function dragBox(a: Corner, b: Corner): Bbox {
+  const span = ((b.lng - a.lng + 540) % 360) - 180; // signed, -180 to 180 degrees
+  const otherEnd = a.lng + span;
+  return {
+    west: Math.min(a.lng, otherEnd),
+    east: Math.max(a.lng, otherEnd),
+    south: Math.max(-90, Math.min(a.lat, b.lat)),
+    north: Math.min(90, Math.max(a.lat, b.lat)),
+  };
+}
+
+// The API cannot take a box across the 180° line: deps.py needs west < east within -180 to 180.
+export function crossesDateLine(bbox: Bbox): boolean {
+  return bbox.west < -180 || bbox.east > 180;
+}
