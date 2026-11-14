@@ -1,6 +1,6 @@
 // Extra #9 in MASTERSPEC.md section 13: the time-lapse. Play steps through the months of the year
 // range by calling setSelected, so the map, the calendar's outlined cell and the compare panel all
-// follow. Every month is loaded first, and the hatch scale is fixed to the largest single-month
+// follow. Every month is loaded first, and the colour scale is fixed to the largest single-month
 // cell value in the range, so a quiet month never looks as fierce as a big one.
 import { useQueryClient } from "@tanstack/react-query";
 import { useEffect, useMemo, useRef, useState } from "react";
