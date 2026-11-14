@@ -5,16 +5,18 @@ type Option<T extends string> = { value: T; label: ReactNode };
 
 type Props<T extends string> = {
   label: string; // read by screen readers, for example "Counts"
+  describedBy?: string; // id of a line of text that explains the switch
   options: Option<T>[];
   value: T;
   onChange: (value: T) => void;
 };
 
-export function Segmented<T extends string>({ label, options, value, onChange }: Props<T>) {
+export function Segmented<T extends string>({ label, describedBy, options, value, onChange }: Props<T>) {
   return (
     <div
       role="group"
       aria-label={label}
+      aria-describedby={describedBy}
       className="inline-flex overflow-hidden rounded border"
       style={{ borderColor: "var(--border)" }}
     >
