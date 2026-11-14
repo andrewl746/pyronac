@@ -51,3 +51,87 @@ body {
     scroll-behavior: auto !important;
   }
 }
+
+/* Briefing page (section 13, extra 6): printing the page gives the sidebar as a one-page report.
+   .print-only shows only on paper, .no-print only on screen. */
+.print-only {
+  display: none;
+}
+
+@media print {
+  @page {
+    size: A4 portrait;
+    margin: 12mm;
+  }
+
+  /* Paper is white, so the dark theme is swapped for a light one with the same names. */
+  :root {
+    --bg: #ffffff;
+    --panel: #ffffff;
+    --panel-2: #f3f4f6;
+    --border: #c9ced6;
+    --text: #111418;
+    --text-dim: #4b5563;
+    --accent: #b84a00;
+    --focus: #1d6fb8;
+    --zero-cell: #eceff3;
+    color-scheme: light;
+  }
+
+  html,
+  body,
+  #root,
+  #root > div {
+    height: auto !important;
+    display: block !important;
+    background: #ffffff !important;
+  }
+
+  /* Only the sidebar goes on paper: no header, no map. */
+  header,
+  section[aria-label="Map"],
+  .no-print {
+    display: none !important;
+  }
+
+  main {
+    display: block !important;
+  }
+
+  aside {
+    width: auto !important;
+    overflow: visible !important;
+    border: 0 !important;
+    background: #ffffff !important;
+  }
+
+  .print-only {
+    display: block;
+  }
+
+  /* Two columns at the on-screen panel width, scaled down to fit the page, so the charts keep
+     the size they were drawn at. */
+  .briefing {
+    display: block !important;
+    width: 856px;
+    padding: 0 !important;
+    columns: 2;
+    column-gap: 40px;
+    zoom: 0.8;
+  }
+
+  .briefing > * {
+    break-inside: avoid;
+    margin: 0 0 20px;
+  }
+
+  .briefing-title {
+    column-span: all;
+  }
+
+  /* Keep the colours of the calendar and the charts. */
+  * {
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+}

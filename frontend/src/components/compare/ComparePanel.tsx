@@ -1,7 +1,8 @@
 // Compares one month with the same calendar month in the other years. Feature F4.
-import { useCompare } from "../../api/hooks";
+import { useCompare, useMeta } from "../../api/hooks";
 import { formatCount, formatMonthYear, monthName } from "../../lib/format";
 import { useStore } from "../../state/store";
+import { errorPercent, estimateFrom, estimateRange, isEstimated } from "../calendar/estimate";
 import { CompareChart } from "./CompareChart";
 import { headline, ordinal, partialNote } from "./sentences";
 
@@ -22,6 +23,7 @@ export function ComparePanel() {
   const selected = useStore((state) => state.selected);
   // With nothing selected, leave year and month out and the API uses the latest complete month.
   const compare = useCompare(bbox, selected?.year, selected?.month);
+  const estimate = estimateFrom(useMeta().data);
 
   let body;
   if (!bbox) {
@@ -36,6 +38,10 @@ export function ComparePanel() {
     const month = monthName(target.month);
     const partial = partialNote(data);
     const sentence = headline(data);
+    const targetRange =
+      target.harmonized > 0 && isEstimated(estimate, target.year, target.month)
+        ? estimateRange(target.harmonized, estimate.error)
+        : null;
     body = (
       <div className="flex flex-col gap-2">
         <div aria-live="polite">
@@ -57,19 +63,30 @@ export function ComparePanel() {
               </>
             )}
           </p>
+          {targetRange && (
+            <p style={{ color: "var(--text-dim)" }}>
+              {formatMonthYear(target.year, target.month)} is an estimate from MODIS: likely{" "}
+              {formatCount(targetRange.low)} to {formatCount(targetRange.high)} hot spots.
+            </p>
+          )}
         </div>
         <div
           id={COMPARE_CHART_ID}
           role="img"
           aria-label={`Bar chart of ${month} hot spots by year, ${baseline.start_year} to ${baseline.end_year}. ${sentence}`}
         >
-          <CompareChart data={data} />
+          <CompareChart data={data} estimate={estimate} />
         </div>
         <p className="flex flex-wrap gap-x-3 gap-y-1 text-xs" style={{ color: "var(--text-dim)" }}>
           <Key swatch={{ background: "var(--accent)" }}>{formatMonthYear(target.year, target.month)}</Key>
           <Key swatch={{ background: "var(--text-dim)", opacity: 0.55 }}>other years</Key>
           <Key swatch={{ height: 0, borderTop: "2px dashed var(--text)" }}>median</Key>
           <Key swatch={{ background: "var(--focus)", opacity: 0.3 }}>usual range (middle half of years)</Key>
+          {estimate && data.history.some((h) => h.harmonized > 0 && isEstimated(estimate, h.year, target.month)) && (
+            <Key swatch={{ width: 0, height: 10, borderLeft: "2px solid var(--text)" }}>
+              range of the estimate before February 2012 (±{errorPercent(estimate.error)})
+            </Key>
+          )}
         </p>
       </div>
     );

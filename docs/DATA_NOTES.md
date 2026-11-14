@@ -1,16 +1,19 @@
 # Data notes (Yuvi)
 
-Status: Saturday 14 November 2026, 18:10 UTC.
+Status: Saturday 14 November 2026, 19:00 UTC.
 
 ## Get the data: no NASA login needed
 
-All files are on the public release
-[data-canada-2003-2025-20261114](https://github.com/andrewl746/pyronac/releases/tag/data-canada-2003-2025-20261114).
-Checksums are in [SHA256SUMS.txt](https://github.com/andrewl746/pyronac/releases/download/data-canada-2003-2025-20261114/SHA256SUMS.txt).
+**Use the processed tables on
+[data-3-countries-2003-2026-per-country-20261114](https://github.com/andrewl746/pyronac/releases/tag/data-3-countries-2003-2026-per-country-20261114)**
+(Andrew L's build with `main`'s per-country method, 44c8ab4). The raw CSVs and older builds are on
+[data-canada-2003-2025-20261114](https://github.com/andrewl746/pyronac/releases/tag/data-canada-2003-2025-20261114),
+with checksums in [SHA256SUMS.txt](https://github.com/andrewl746/pyronac/releases/download/data-canada-2003-2025-20261114/SHA256SUMS.txt).
 
 | File | What it is | Size |
 |---|---|---:|
-| **[pyronac-canada-india-brazil-processed-ml-2003-2026.zip](https://github.com/andrewl746/pyronac/releases/download/data-canada-2003-2025-20261114/pyronac-canada-india-brazil-processed-ml-2003-2026.zip)** | **Use this one.** Canada, India and Brazil, 2003 to 14 Nov 2026, built with `main`'s harmonizer (method `ml`; built with PR #28's ml_model.py, whose queries give the same values as `main`'s) | 698 MB |
+| **[pyronac-canada-india-brazil-2003-2026-per-country.zip](https://github.com/andrewl746/pyronac/releases/download/data-3-countries-2003-2026-per-country-20261114/pyronac-canada-india-brazil-2003-2026-per-country.zip)** | **Use this one.** Canada, India and Brazil, 2003 to 14 Nov 2026, method `ml` for Canada's MODIS era and the ratio method for India and Brazil. Validation 0.7769 → 0.0961 (9.6%). sha256 `5b4c027c8ce25f1bb950a25b6eea5aad9ad27da0fee2c78d12c29265f6d968be` | 689 MB |
+| [pyronac-canada-india-brazil-processed-ml-2003-2026.zip](https://github.com/andrewl746/pyronac/releases/download/data-canada-2003-2025-20261114/pyronac-canada-india-brazil-processed-ml-2003-2026.zip) | Superseded. Same data, built before the per-country method (one model for all three countries, validation 0.1062, the old 10.6%) | 698 MB |
 | [pyronac-canada-india-brazil-processed-2003-2026.zip](https://github.com/andrewl746/pyronac/releases/download/data-canada-2003-2025-20261114/pyronac-canada-india-brazil-processed-2003-2026.zip) | Same data, older build with the Appendix A v0 placeholder | 695 MB |
 | [pyronac-canada-2003-2025.zip](https://github.com/andrewl746/pyronac/releases/download/data-canada-2003-2025-20261114/pyronac-canada-2003-2025.zip) | First Canada-only build, through 2025, v0 | 100 MB |
 | [pyronac-canada-raw-2003-2026.zip](https://github.com/andrewl746/pyronac/releases/download/data-canada-2003-2025-20261114/pyronac-canada-raw-2003-2026.zip) | Raw FIRMS CSVs, Canada | 287 MB |
@@ -28,11 +31,11 @@ Raw ZIPs: extract into `data/raw/` and run `python pipeline/build.py` to rebuild
 | Sources | NASA FIRMS MODIS Collection 6.1 (Terra, Aqua); VIIRS 375 m on Suomi NPP and NOAA-20 |
 | Countries | Canada, India, Brazil |
 | Raw files | 153 CSVs, 51 per country: MODIS 2003–2025 (23), Suomi NPP 2012–2025 (14), NOAA-20 2018–2025 (8), and six 2026 files (archive and NRT for each sensor) |
-| Raw bytes | Canada 1,111,374,908; India 1,246,536,237; Brazil 3,289,993,079 |
+| Raw bytes | Canada 1,113,374,908; India 1,246,536,237; Brazil 3,289,993,079 |
 | `data_through` | 2026-11-14 |
 | Served points | 42,769,559 (Brazil 26,866,806; India 8,078,063; Canada 7,824,690) |
 | Grid | 4,944,893 rows over 142,277 cells |
-| Harmonization | `ml`, validation: raw error 0.7769 → harmonized 0.1062 (about 0.106 run to run; median absolute percentage error of monthly totals per country, 2020–2025, learned on 2012–2019) |
+| Harmonization | `ml` for Canada, ratio method for India and Brazil (44c8ab4). Validation: raw error 0.7769 → harmonized 0.0961 (median absolute percentage error of monthly totals per country, 2020–2025, learned on 2012–2019) |
 | NOAA-20 handoff ratios | Brazil 1.011, Canada 0.997, India 0.987 |
 
 Yearly files come from `https://firms.modaps.eosdis.nasa.gov/data/country/<source>/<year>/<source>_<year>_<Country>.csv`
@@ -41,7 +44,7 @@ Yearly files come from `https://firms.modaps.eosdis.nasa.gov/data/country/<sourc
 `<source>_2026-nrt_<Country>.csv` per section 5.1. Some yearly files failed the first time in the
 browser and were downloaded again before the build. No expected country, sensor or year is missing.
 
-## Checks (section 12), on the ML build
+## Checks (section 12), on the per-country build
 
 | Check | Result |
 |---|---|
@@ -60,8 +63,9 @@ browser and were downloaded again before the build. No expected country, sensor 
   Andrew L. The full build now takes about 70 s, and `ml_model.load()` on the full data takes 3 s.
 - **Builds are not bit-for-bit reproducible.** Two runs of the same code on the same data give
   `modis_frp_sum` values that differ by up to 6e-11 (DuckDB adds floats in parallel). That moves some
-  MODIS-era ML estimates slightly: validation is 0.1061 or 0.1062 depending on the run. The published
-  ZIP is one such run. Counts (`modis_count`, `snpp_count`, `noaa20_count`) and the snpp era are exact.
+  MODIS-era ML estimates slightly (the earlier all-countries model gave 0.1061 or 0.1062 by run). A
+  fresh rebuild of `main` (c9f53b7) on 14 Nov gave 0.0961 and a `grid.parquet` matching the
+  per-country ZIP to 1e-13. Counts (`modis_count`, `snpp_count`, `noaa20_count`) and the snpp era are exact.
 - `points` serves only the sensor of each era: MODIS before Feb 2012, Suomi NPP to Oct 2026, NOAA-20
   from Nov 2026. Historical NOAA-20 and Suomi NPP's partial January 2012 are in `grid_counts` only.
 - Suomi NPP stops on 2026-11-02. That is why the record switches to NOAA-20 in November 2026.

@@ -680,7 +680,7 @@ Parameters: the box, `start_year` (default 2003), `end_year` (default: the lates
 
 - `years`: for each year the harmonized total, the raw total, and `season_center`, the average month number weighted by harmonized count (`sum(month * harmonized) / sum(harmonized)`, `null` when the year has no fire).
 - `harmonized_trend` and `raw_trend`: a straight line fitted to yearly totals against year with `scipy.stats.linregress`. `slope_per_year` is the slope. `percent_per_decade` is `slope * 10 / mean * 100`, `null` when the mean is 0. `direction` is "increasing" or "decreasing" when `p_value` is below 0.05, otherwise "no clear trend".
-- `season_shift`: the same fit on `season_center` against year, reported as `days_per_decade = slope * 10 * 30.44`. `null` when fewer than 5 years have a `season_center`.
+- `season_shift`: the same fit on `season_center` against year, reported as `days_per_decade = slope * 10 * 30.44`, with the fit's `p_value`. `null` when fewer than 5 years have a `season_center`.
 
 The point of returning both trends: the raw one shows a steep rise that is mostly the sensor change, and the harmonized one shows what is really there.
 

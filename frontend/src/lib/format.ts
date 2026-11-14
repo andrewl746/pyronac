@@ -12,6 +12,13 @@ export function formatCount(value: number): string {
   return countFormat.format(value);
 }
 
+const compactFormat = new Intl.NumberFormat("en-US", { notation: "compact", maximumFractionDigits: 1 });
+
+// For axis ticks, where room is short: 950 -> "950", 55000 -> "55K", 1200000 -> "1.2M"
+export function formatCompact(value: number): string {
+  return compactFormat.format(value);
+}
+
 // month is 1 to 12. 7 -> "July"
 export function monthName(month: number): string {
   return MONTH_NAMES[month - 1] ?? "";

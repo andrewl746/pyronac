@@ -7,9 +7,9 @@ Read [MASTERSPEC.md](MASTERSPEC.md) for the project contracts and team task shee
 
 ## Get the data
 
-Real data is not in git. Download it from the
-[data release](https://github.com/andrewl746/pyronac/releases/tag/data-canada-2003-2025-20261114)
-and see [docs/DATA_NOTES.md](docs/DATA_NOTES.md) for which file to take.
+Real data is not in git. Download the processed tables from the
+[per-country data release](https://github.com/andrewl746/pyronac/releases/tag/data-3-countries-2003-2026-per-country-20261114)
+(raw FIRMS CSVs are on the [earlier release](https://github.com/andrewl746/pyronac/releases/tag/data-canada-2003-2025-20261114)) and see [docs/DATA_NOTES.md](docs/DATA_NOTES.md) for which file to take.
 The backend and its tests run on the small fake set in `data/fixtures/` without any download.
 
 ## Build the tables yourself

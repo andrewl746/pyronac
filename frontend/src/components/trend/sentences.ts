@@ -9,11 +9,18 @@ export function lastFullYear(meta: MetaResponse): number {
   return month === 12 ? year : year - 1;
 }
 
-// The years the trend covers: the selected range, cut to full years. Null when fewer than 3 remain,
-// because /api/trend needs at least 3.
-export function trendYears(meta: MetaResponse, startYear: number, endYear: number): [number, number] | null {
-  const end = Math.min(endYear, lastFullYear(meta));
-  return end - startYear + 1 >= 3 ? [startYear, end] : null;
+// The years to ask /api/trend for: the selected range, cut to full years. The end is left out
+// (undefined) whenever it reaches the last full year, so the backend's own default stops the fit there
+// and a partial year never skews it. Null when fewer than 3 full years remain, because the API needs 3.
+export function trendYears(
+  meta: MetaResponse,
+  startYear: number,
+  endYear: number,
+): [number, number | undefined] | null {
+  const lastFull = lastFullYear(meta);
+  const end = Math.min(endYear, lastFull);
+  if (end - startYear + 1 < 3) return null;
+  return [startYear, end === lastFull ? undefined : end];
 }
 
 // "rose about 12% per decade", "fell about 8% per decade", "shows no clear trend"
@@ -35,14 +42,31 @@ export function trendSentence(data: TrendResponse): string {
   const raw = `Counted as the satellites reported them, the yearly count here ${change(data.raw_trend)} from ${span}.`;
   const harmonized = `On one consistent scale the record ${change(data.harmonized_trend)}.`;
 
+  // Only meaningful when the years cross the 2012 switch from MODIS to VIIRS.
+  const coversSwitch = data.start_year <= 2011 && data.end_year >= 2012;
+  const rawRises = data.raw_trend.direction === "increasing";
+  if (!coversSwitch || !rawRises) return `${raw} ${harmonized}`;
+
   const rawPercent = data.raw_trend.percent_per_decade ?? 0;
   const harmonizedPercent =
     data.harmonized_trend.direction === "increasing" ? (data.harmonized_trend.percent_per_decade ?? 0) : 0;
-  const coversSwitch = data.start_year <= 2011 && data.end_year >= 2012;
-  const inventedRise =
-    coversSwitch && data.raw_trend.direction === "increasing" && harmonizedPercent < rawPercent / 2;
+  if (harmonizedPercent < rawPercent / 2) {
+    return `${raw} ${harmonized} Most of the raw rise is the 2012 switch from MODIS to the sharper VIIRS sensor.`;
+  }
+  if (harmonizedPercent < rawPercent) {
+    return `${raw} ${harmonized} The raw record overstates the rise: part of it is the 2012 switch from MODIS to the sharper VIIRS sensor.`;
+  }
+  return `${raw} ${harmonized}`;
+}
 
-  return inventedRise
-    ? `${raw} ${harmonized} Most of the raw rise is the 2012 switch from MODIS to the sharper VIIRS sensor.`
-    : `${raw} ${harmonized}`;
+// "The fire season moved about 4 days earlier per decade from 2003 to 2025." (MASTERSPEC.md section 13,
+// item 5.) Null when the API has no season fit (fewer than 5 years with fire).
+export function seasonSentence(data: TrendResponse): string | null {
+  const shift = data.season_shift;
+  if (!shift) return null;
+  const span = `${data.start_year} to ${data.end_year}`;
+  const days = Math.round(Math.abs(shift.days_per_decade));
+  if (shift.p_value >= 0.05 || days === 0) return `The fire season shows no clear shift from ${span}.`;
+  const way = shift.days_per_decade < 0 ? "earlier" : "later";
+  return `The fire season moved about ${days} ${days === 1 ? "day" : "days"} ${way} per decade from ${span}.`;
 }
