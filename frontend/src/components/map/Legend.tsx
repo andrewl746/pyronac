@@ -15,12 +15,13 @@ type Props = {
   step: number; // cell size in tenths of a degree
   period: string;
   loading: boolean;
+  failed: boolean;
 };
 
 const STOPS = [0.15, 0.5, 0.8, 1];
 
 // Bottom left of the map: what the red hatching means, with real counts.
-export default function Legend({ max, step, period, loading }: Props) {
+export default function Legend({ max, step, period, loading, failed }: Props) {
   const backgrounds = useMemo(() => {
     const ratio = Math.min(2, Math.max(1, Math.round(window.devicePixelRatio || 1)));
     return [0, 1, 2].map((level) => hatchCssBackground(level, ratio));
@@ -58,7 +59,7 @@ export default function Legend({ max, step, period, loading }: Props) {
           ))}
         </ul>
       ) : (
-        <p className="text-[var(--text-dim)]">{loading ? "Loading hot spots…" : "No hot spots in this period."}</p>
+        <p className="text-[var(--text-dim)]">{failed ? "Hot spots are unavailable right now." : loading ? "Loading hot spots…" : "No hot spots in this period."}</p>
       )}
       <div className="mt-2 text-[var(--text-dim)]">Hover a cell for its exact count.</div>
     </div>

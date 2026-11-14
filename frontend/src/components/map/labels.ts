@@ -39,10 +39,3 @@ export function mapPeriod(selected: YearMonth | null, startYear: number, endYear
   const label = startYear === endYear ? `${startYear}` : `${startYear} to ${endYear}`;
   return { start: ym(startYear, 1), end: ym(endYear, 12), label };
 }
-
-// "2026-11-06" -> "6 Nov 2026"
-export function shortDate(iso: string): string {
-  const [year, month, day] = iso.split("-").map(Number);
-  if (!year || !month || !day) return iso;
-  return `${day} ${monthName(month).slice(0, 3)} ${year}`;
-}

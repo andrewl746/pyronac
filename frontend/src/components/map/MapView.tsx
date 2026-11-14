@@ -21,10 +21,22 @@ function reducedMotion(): boolean {
   return window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 }
 
+// MapLibre needs WebGL. Checked once, so a browser without it gets a message instead of a crash.
+function webglAvailable(): boolean {
+  try {
+    const gl = document.createElement("canvas").getContext("webgl2");
+    gl?.getExtension("WEBGL_lose_context")?.loseContext();
+    return gl !== null;
+  } catch {
+    return false;
+  }
+}
+
 export default function MapView() {
   const containerRef = useRef<HTMLDivElement>(null);
   const [map, setMap] = useState<maplibregl.Map | null>(null);
   const [drawing, setDrawing] = useState(false);
+  const [mapFailed] = useState(() => !webglAvailable());
 
   const bbox = useStore((s) => s.bbox);
   const setBbox = useStore((s) => s.setBbox);
@@ -131,9 +143,21 @@ export default function MapView() {
     };
   }, [map, periodLabel, drawing]);
 
+  function showWholeGlobe() {
+    map?.flyTo({ center: START.center, zoom: START.zoom, animate: !reducedMotion(), duration: 1400 });
+  }
+
+  if (mapFailed) {
+    return (
+      <div role="alert" className="flex h-full items-center justify-center p-8 text-center text-[var(--text-dim)]">
+        The map could not start because this browser has WebGL turned off or unavailable. The sidebar still works.
+      </div>
+    );
+  }
+
   return (
     <>
-      <div ref={containerRef} className="pyronac-map" />
+      {/* The map tools come first so Tab reaches them before the map itself. */}
       <div className="absolute top-3 left-3 z-10 flex items-center gap-2">
         <button
           type="button"
@@ -148,10 +172,47 @@ export default function MapView() {
         >
           {drawing ? "Cancel drawing" : "Draw area"}
         </button>
+        {!drawing && (
+          <button
+            type="button"
+            disabled={!map}
+            onClick={showWholeGlobe}
+            className="rounded-md border border-[var(--border)] bg-[var(--panel)] px-3 py-1.5 text-sm text-[var(--text)] shadow-lg hover:bg-[var(--panel-2)] disabled:opacity-50"
+          >
+            Whole globe
+          </button>
+        )}
         {drawing && (
           <span role="status" className="rounded-md bg-[var(--panel)]/90 px-2 py-1 text-xs text-[var(--text-dim)]">
             Press, drag and release on the map. Esc cancels.
           </span>
+        )}
+      </div>
+      <div ref={containerRef} className="pyronac-map" />
+      <div className="pointer-events-none absolute top-3 left-1/2 z-10 -translate-x-1/2">
+        {grid.isError ? (
+          <div
+            role="alert"
+            className="pointer-events-auto flex items-center gap-3 rounded-md border border-[var(--border)] bg-[var(--panel)] px-3 py-1.5 text-sm text-[var(--text)] shadow-lg"
+          >
+            <span>Could not load hot spots: {grid.error.message}</span>
+            <button
+              type="button"
+              onClick={() => void grid.refetch()}
+              className="rounded border border-[var(--border)] px-2 py-0.5 text-xs hover:bg-[var(--panel-2)]"
+            >
+              Try again
+            </button>
+          </div>
+        ) : (
+          (grid.isFetching || !map) && (
+            <div
+              role="status"
+              className="rounded-md bg-[var(--panel)]/90 px-3 py-1.5 text-xs text-[var(--text-dim)] shadow-lg"
+            >
+              {map ? "Loading hot spots…" : "Loading the globe…"}
+            </div>
+          )
         )}
       </div>
       <Legend
@@ -159,6 +220,7 @@ export default function MapView() {
         step={grid.data?.step ?? WORLD_STEP}
         period={period.label}
         loading={grid.isPending}
+        failed={grid.isError}
       />
     </>
   );
