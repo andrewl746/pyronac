@@ -2,8 +2,9 @@
 
 Draft by Sam, Saturday 14 November 2026, updated Saturday afternoon after the full data build was
 published. Every field on the Space Apps project page is below (MASTERSPEC.md section 14). Lines
-marked **TODO** still need a person. Numbers come from `docs/METHOD.md`, `docs/DATA_NOTES.md` and the
-app running on the published build (data through 14 November 2026). Check them again before
+marked **TODO** still need a person. Numbers come from `docs/METHOD.md` (as of Saturday afternoon, after
+the method was chosen per country), `docs/DATA_NOTES.md` and the app running on the published build
+(data through 14 November 2026). Check them again before
 submitting, because the method and the data can still change.
 
 Everyone on the team reads the final text before it is submitted.
@@ -20,7 +21,7 @@ as reported, Canada's fire record jumps about fivefold between 2011 and 2012 alt
 on the ground. Pyronac harmonizes the two records into one, on the scale of VIIRS on Suomi NPP, and
 shows it as a calendar of burning activity from 2003 to this month for any area the user picks on a
 globe, in Canada, India and Brazil. On six years the method never saw, the typical error of a
-monthly total falls from about 80% for raw MODIS to about 14% after harmonization (Canada). An
+monthly total falls from about 78% for raw MODIS to about 10% after harmonization. An
 emergency manager can ask "is this October unusual here?" and get an answer that does not depend on
 which satellite was flying.
 
@@ -75,10 +76,12 @@ outline is at the end of this file.
 - **Grid.** Detections are counted per month in cells of 0.1 by 0.1 degree. Every number in the app
   is a sum over whole cells, so the map, the calendar, the comparison and the downloads always agree.
 - **Harmonization.** Every month is put on the scale of VIIRS on Suomi NPP. From February 2012 to
-  October 2026 the record is Suomi NPP as observed. Before that, a gradient boosting model estimates
-  what Suomi NPP would have reported from what MODIS saw (count, fire radiative power, place, season
-  and neighbouring cells). Where the model has no estimate, a ratio per 1 degree block and calendar
-  month is used. From November 2026 the record is NOAA-20 times a handoff ratio measured over April
+  October 2026 the record is Suomi NPP as observed. Before that it is an estimate of what Suomi NPP
+  would have reported, made from what MODIS saw. Two methods were tested per country and each
+  country uses the one that did better on years it never saw: a gradient boosting model for Canada
+  (inputs: count, fire radiative power, place, season and neighbouring cells), and for India and
+  Brazil a ratio of Suomi NPP to MODIS detections per 1 degree block and calendar month. From
+  November 2026 the record is NOAA-20 times a handoff ratio measured over April
   2018 to October 2025, when both VIIRS satellites flew. The ratio is close to 1 (Canada 0.997,
   India 0.987, Brazil 1.011).
 - **App.** A Python pipeline with DuckDB writes Parquet tables. A FastAPI server reads them. The
@@ -88,20 +91,25 @@ outline is at the end of this file.
 
 The conversion is learned on 2012 to 2019 only and tested on 2020 to 2025, years it never saw, by
 comparing the estimate from MODIS with what Suomi NPP really reported. The error is the median
-absolute percentage error of Canada's totals.
+absolute percentage error: 10% means the typical total is 10% away from the observed one.
 
-| Method, tested on 2020 to 2025 | Monthly totals | Yearly totals |
+| Tested on 2020 to 2025 | Monthly totals | Yearly totals |
 |---|---|---|
-| Raw MODIS | 79.9% | 80.8% |
-| Ratio method | 18.1% | 9.9% |
-| ML model (used in the app) | 13.5% | 1.6% |
+| Raw MODIS, nothing done, all three countries | 77.7% | |
+| What the app ships, all three countries | 9.6% | 1.9% |
+| Canada (model) | 14.0% | 1.4% |
+| India (ratio method) | 9.7% | 1.5% |
+| Brazil (ratio method) | 6.3% | 3.8% |
 
-The build with all three countries reports 77.7% for raw MODIS and 10.6% after harmonization for
-monthly totals per country. That is the number the app's method note shows.
+A model replaces the ratio method for a country only if it is lower on monthly, yearly and regional
+totals on the test years. That rule was fixed before each test. Only Canada's model passed.
 
-**TODO (Andrew L):** `docs/METHOD.md` still gives Canada only. Say which pair is the headline (79.9%
-to 13.5% for Canada, or 77.7% to 10.6% for the three countries), make the summary above match, and
-add one sentence on what is weakest (for Canada, 2024 is the one year far off, at +14.8%).
+The weakest points: Canada in 2024 (the estimate is 16.0% above what Suomi NPP observed) and Brazil
+in 2025 (11.1% above). A single month in a single region can be further off than these country
+totals.
+
+**TODO (Andrew L):** confirm this section against `docs/METHOD.md` once the data build is final. The
+published build from before the per-country choice shows 10.6% in the app's method note, not 9.6%.
 
 ### Benefits
 
@@ -200,7 +208,7 @@ AI-generated images.
 3. **The fix.** The same calendar in Harmonized mode, on the scale of VIIRS on Suomi NPP. The false
    jump is gone. Picture: Raw and Harmonized side by side.
 4. **Does it work?** Learned on 2012 to 2019, tested on 2020 to 2025: the typical error of a monthly
-   total falls from about 80% to about 14% (Canada). Picture: the validation table.
+   total falls from about 78% to about 10%, across three countries. Picture: the validation table.
 5. **Is this month unusual?** The compare panel: a month against the same month in every other year,
    in one sentence. Picture: July 2023 for the Northwest Territories.
 6. **The record carries on.** Suomi NPP stopped delivering data on 2 November 2026. The record
@@ -209,4 +217,4 @@ AI-generated images.
 7. **Use it.** Canada, India and Brazil. CSV and PNG downloads, colour ramps safe for colour vision
    deficiency, keyboard access. NASA FIRMS data, the team, the repository link.
 
-**TODO (Sam, Andrew L):** agree the headline numbers for slide 4, then take the screenshots.
+**TODO (Sam, Andrew L):** take the screenshots once the data build is final.
