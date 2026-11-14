@@ -166,8 +166,11 @@ def load(con, data_dir, keep_grid_counts=False):
             g.country, g.cell_x, g.cell_y, g.year, g.month, g.ym, g.block_x, g.block_y,
             g.snpp_count,
             g.snpp_count + g.modis_count * 1.0 / block.block_modis * block.missed AS snpp_target,
-            g.modis_count, g.modis_frp_sum,
-            g.modis_frp_sum / g.modis_count AS frp_mean,
+            -- FRP sums are added up in floating point across threads, so their last digits can change
+            -- from one build to the next (by about 1e-10), and that was enough to change the model.
+            -- FIRMS gives FRP to 2 decimals, so rounding the sum to 3 gives the same number every time.
+            g.modis_count, round(g.modis_frp_sum, 3) AS modis_frp_sum,
+            round(g.modis_frp_sum, 3) / g.modis_count AS frp_mean,
             (g.cell_y + 0.5) / 10.0 AS lat,
             (g.cell_x + 0.5) / 10.0 AS lon,
             near.near_8, near.near_24,
@@ -344,7 +347,9 @@ def scores(con, table, names, where):
         "yearly": ("country, year", MIN_MONTH_TOTAL),
         "region": (region, MIN_REGION_TOTAL),
     }
-    sums = ", ".join(f"sum(e{i})" for i in range(len(names)))
+    # Each sum adds its rows in one fixed order. A plain sum of floats is added up across threads in
+    # whatever order they finish, so its last digits, and so the errors, could change from run to run.
+    sums = ", ".join(f"sum(e{i} ORDER BY cell_x, cell_y, year, month)" for i in range(len(names)))
     out = {name: {} for name in names}
     for level, (keys, minimum) in levels.items():
         n_keys = 3 if level != "yearly" else 2

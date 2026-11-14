@@ -206,6 +206,21 @@ method would (2003: 203,318 against 227,034; 2010: 234,642 against 235,170).
 - **2024 in Canada is the one year far off (+16%).** In 2024 Suomi NPP also reported about 10% fewer
   hot spots than NOAA-20 over Canada (see the next section), so part of that gap may be Suomi NPP
   itself, not the model. Brazil 2025 (+11%) and India 2025 (+7%) are the next largest.
+- **Rebuilds used to give slightly different estimates for 2003 to January 2012** (Yuvi spotted it).
+  The build adds up each cell's fire radiative power (FRP) on several threads at once. Each addition
+  is rounded a little, so the last digits of a sum depended on the order, by at most about one
+  ten-billionth. The model uses those sums as inputs, and that was enough to change it: adding the same
+  values in another order changed all 53,872 of Canada's pre-2012 estimates (by up to 88 hot spots in
+  a cell and month, and up to 0.8% in a year's total) and moved Canada's monthly test error from 14.0%
+  to 14.4%. FIRMS gives FRP to two decimals, so `pipeline/ml_model.py` now rounds each sum to three
+  decimals before the model sees it, which removes the noise and changes no real value. It also adds
+  up the error figures in a fixed order. Now any order gives identical estimates and errors. The
+  numbers in this file are from the published build, made before the fix. With the fix, Canada's 2003
+  to 2011 yearly totals move by less than 1%, its test errors become 14.8% monthly, 1.2% yearly and
+  15.1% for regions, and India and Brazil do not change. Every country's choice and decision stay the
+  same: Canada's model still beats the ratio method by 3.3 points monthly. The lesson: a change too
+  small to mean anything moved Canada's monthly test error by almost a point, so gaps that small
+  between versions of a model are noise.
 
 ## The second handoff: Suomi NPP to NOAA-20
 
