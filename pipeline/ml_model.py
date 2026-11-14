@@ -59,9 +59,27 @@ SETTINGS = {
 # weighted by the MODIS count, and multiplies back. A rate can follow a fire bigger than any in training.
 TARGETS = ["count", "rate"]
 
-# The version chosen inside 2012 to 2019 and then tested once on 2020 to 2025. harmonize.run() uses it.
+# The version chosen inside 2012 to 2019 and then tested once on 2020 to 2025 on Canada.
 CHOSEN = ("count", "full", "careful")
 MIN_ROWS = 500  # with fewer cell-months than this to learn from, the build keeps the ratio method
+
+# Per-country check (--per-country). A model is either "pooled", learned from every country at once,
+# or "country", learned from that country's own cell-months only. These are the candidates compared
+# inside 2012 to 2019 for each country.
+COUNTRY_CANDIDATES = [("pooled",) + CHOSEN] + [
+    ("country", target, features, "careful") for target in TARGETS for features in ("basic", "full")
+]
+# The rule, fixed before the per-country test was run: a country uses its model only if, on 2020 to
+# 2025, the model is lower than the ratio method on monthly, yearly and regional totals, and at least
+# 2 points lower on monthly totals. Otherwise that country uses the ratio method.
+MONTHLY_MARGIN = 0.02
+
+# Which model each country uses in the build. A country not listed uses the ratio method.
+# None means the model in CHOSEN, learned from every country, for every country.
+# Decided on 14 November 2026 by `python pipeline/ml_model.py --per-country --test` on Canada, India
+# and Brazil, 2003 to 2026: only Canada's model passed the rule above on 2020 to 2025. India and Brazil
+# use the ratio method. See docs/METHOD.md.
+MODEL_FOR = {"canada": ("country", "rate", "full", "careful")}
 
 
 def load(con, data_dir, keep_grid_counts=False):
@@ -196,34 +214,92 @@ def rows_of(con, where):
 
 
 def apply(con, data_dir):
-    """Used by harmonize.run(). Fits the chosen version and estimates every MODIS-era row.
+    """Used by harmonize.run(). Estimates every MODIS-era row of the countries that use a model.
 
-    Creates the table ml_estimate (cell_x, cell_y, year, month, estimate). Returns None when there is
-    too little data to learn from, otherwise a dict with the errors on the test years (or None for
-    them when the data has no test years).
+    Which model each country uses is MODEL_FOR. Countries without one get no estimate, so harmonize.run()
+    uses the ratio method for them. Creates the table ml_estimate (cell_x, cell_y, year, month, estimate).
+    Returns None when no country uses a model or there is too little data, otherwise a dict with the
+    plan and the errors on the test years of what is actually shipped: the model where a country uses
+    one, the ratio method elsewhere (None when the data has no test years).
     """
     load(con, data_dir, keep_grid_counts=True)
-    target, features, settings = CHOSEN
     train_months = f"g.ym BETWEEN {TRAIN_FROM_YM} AND {TRAIN_TO_YM}"
-    test_months = f"g.ym BETWEEN {TEST_FROM_YM} AND {TEST_TO_YM}"
     overlap = f"g.ym BETWEEN {TRAIN_FROM_YM} AND {config.SNPP_ERA_END_YM}"
     if con.execute(f"SELECT count(*) FROM feat g WHERE {overlap}").fetchone()[0] < MIN_ROWS:
         return None
+    countries = [row[0] for row in con.execute("SELECT DISTINCT country FROM feat ORDER BY 1").fetchall()]
+    if MODEL_FOR is None:
+        plan = {country: ("pooled",) + CHOSEN for country in countries}
+    else:
+        plan = {country: tuple(MODEL_FOR[country]) for country in countries if country in MODEL_FOR}
+    if not plan:
+        return None
+
+    def estimates_for(train, rows):
+        out = np.full(len(rows["year"]), np.nan)
+        row_country = np.array([str(value) for value in rows["country"]])
+        for variant in sorted(set(plan.values())):
+            estimate = fit_predict_scoped(train, rows, variant)
+            for country, wanted in plan.items():
+                if wanted == variant:
+                    out[row_country == country] = estimate[row_country == country]
+        return out
 
     tested = None
     train = rows_of(con, train_months)
-    test = rows_of(con, test_months)
-    if len(train["year"]) >= MIN_ROWS and len(test["year"]) > 0:
-        store(con, "tested", test, [fit_predict(train, test, FEATURES[features], settings, target)], append=False)
-        tested = scores(con, "tested", ["ml"], f"ym BETWEEN {TEST_FROM_YM} AND {TEST_TO_YM}")["ml"]
+    if len(train["year"]) >= MIN_ROWS:
+        test = rows_with_ratio(con, f"g.ym BETWEEN {TEST_FROM_YM} AND {TEST_TO_YM}")
+        if len(test["year"]):
+            shipped = np.asarray(test["ratio"], dtype=float).copy()
+            model = estimates_for(train, test)
+            shipped[~np.isnan(model)] = model[~np.isnan(model)]
+            store(con, "tested", test, [shipped], append=False)
+            tested = scores(con, "tested", ["shipped"], f"ym BETWEEN {TEST_FROM_YM} AND {TEST_TO_YM}")["shipped"]
+        # rows_with_ratio learned ratios on the training years only. Put back the ones the build uses.
+        harmonize.learn_ratios(con, harmonize.OVERLAP_FROM_YM, config.SNPP_ERA_END_YM)
 
-    # The model the app uses learns from every month both instruments flew.
+    # The models the app uses learn from every month both instruments flew.
     everything = rows_of(con, overlap)
     old = rows_of(con, f"g.ym <= {config.MODIS_ERA_END_YM}")
-    estimate = fit_predict(everything, old, FEATURES[features], settings, target) if len(old["year"]) else []
-    store(con, "ml_rows", old, [estimate], append=False)
+    estimate = estimates_for(everything, old) if len(old["year"]) else np.array([])
+    keep = ~np.isnan(estimate)
+    store(con, "ml_rows", subset(old, keep), [estimate[keep]], append=False)
     con.execute("CREATE OR REPLACE TABLE ml_estimate AS SELECT cell_x, cell_y, year, month, e0 AS estimate FROM ml_rows")
-    return {"version": name_of(CHOSEN), "test": tested, "rows": len(everything["year"])}
+    # The cell-months the shipped models learned from: every country's for a pooled model, the
+    # country's own for a per-country model.
+    learned_country = np.array([str(value) for value in everything["country"]])
+    pooled = any(variant[0] == "pooled" for variant in plan.values())
+    rows = len(learned_country) if pooled else int(np.isin(learned_country, list(plan)).sum())
+    return {
+        "plan": {country: name_of(variant) for country, variant in plan.items()},
+        "test": tested,
+        "rows": rows,
+    }
+
+
+def subset(rows, mask):
+    return {name: values[mask] for name, values in rows.items()}
+
+
+def fit_predict_scoped(train, test, variant):
+    """Like fit_predict, for a variant (scope, target, features, settings).
+
+    "pooled" learns one model from every country. "country" learns one model per country, from that
+    country's rows only, and predicts that country's rows with it.
+    """
+    scope, target, features, settings = variant
+    if scope == "pooled":
+        return fit_predict(train, test, FEATURES[features], settings, target)
+    out = np.full(len(test["year"]), np.nan)
+    train_country = np.array([str(value) for value in train["country"]])
+    test_country = np.array([str(value) for value in test["country"]])
+    for country in np.unique(test_country):
+        own = train_country == country
+        if own.sum() < MIN_ROWS:
+            continue  # left as NaN: too little to learn from
+        mask = test_country == country
+        out[mask] = fit_predict(subset(train, own), subset(test, mask), FEATURES[features], settings, target)
+    return out
 
 
 def matrix(rows, features):
@@ -287,13 +363,18 @@ def scores(con, table, names, where):
     for i, name in enumerate(names):
         out[name]["bias"] = totals[i] / total if total else None
 
-    # The same errors for each country on its own, monthly and yearly.
+    # The same errors for each country on its own, at the same three levels.
     for name in names:
         out[name]["by_country"] = {}
-    for level, keys in (("monthly", "country, year, month"), ("yearly", "country, year")):
+    country_levels = (
+        ("monthly", "country, year, month", MIN_MONTH_TOTAL),
+        ("yearly", "country, year", MIN_MONTH_TOTAL),
+        ("region", "country, " + region, MIN_REGION_TOTAL),
+    )
+    for level, keys, minimum in country_levels:
         n_keys = keys.count(",") + 1
         actual = con.execute(
-            f"SELECT {keys}, sum(snpp_count) FROM g WHERE {where} GROUP BY ALL HAVING sum(snpp_count) >= {MIN_MONTH_TOTAL}"
+            f"SELECT {keys}, sum(snpp_count) FROM g WHERE {where} GROUP BY ALL HAVING sum(snpp_count) >= {minimum}"
         ).fetchall()
         estimate = {row[:n_keys]: row[n_keys:] for row in con.execute(
             f"SELECT {keys}, {sums} FROM {table} GROUP BY ALL"
@@ -312,7 +393,7 @@ def scores(con, table, names, where):
 
 def show(title, result, order):
     print(title)
-    print("| Method | Canada, monthly | Canada, yearly | 5 degree regions, yearly | Total vs observed |")
+    print("| Method | Monthly, all countries | Yearly, all countries | 5 degree regions, yearly | Total vs observed |")
     print("|---|---|---|---|---|")
     for name in order:
         r = result[name]
@@ -324,12 +405,13 @@ def show(title, result, order):
     countries = sorted(first["by_country"])
     if len(countries) > 1:
         print()
-        print("| Method | Country | Monthly | Yearly |")
-        print("|---|---|---|---|")
-        for name in order:
-            for country in countries:
+        print("| Method | Country | Monthly | Yearly | 5 degree regions, yearly |")
+        print("|---|---|---|---|---|")
+        for country in countries:
+            for name in order:
                 r = result[name]["by_country"].get(country, {})
-                cells = " | ".join("n/a" if r.get(k) is None else f"{r[k] * 100:.1f}%" for k in ("monthly", "yearly"))
+                cells = " | ".join("n/a" if r.get(k) is None else f"{r[k] * 100:.1f}%"
+                                   for k in ("monthly", "yearly", "region"))
                 print(f"| {name} | {country} | {cells} |")
     print()
 
@@ -347,12 +429,79 @@ def name_of(variant):
     return "ml " + "-".join(variant)
 
 
+def per_country(con, data_dir, run_test):
+    """Choose a model for each country inside 2012 to 2019, then test each choice once on 2020 to 2025.
+
+    The candidates are COUNTRY_CANDIDATES. Each country's choice is the candidate with the lowest mean
+    of its three errors inside 2012 to 2019. The test applies the rule above MONTHLY_MARGIN.
+    """
+    train_months = f"g.ym BETWEEN {TRAIN_FROM_YM} AND {TRAIN_TO_YM}"
+    years = [row[0] for row in con.execute(f"SELECT DISTINCT year FROM feat g WHERE {train_months} ORDER BY 1").fetchall()]
+    names = ["flat", "ratio"] + [name_of(v) for v in COUNTRY_CANDIDATES]
+    for position, year in enumerate(years):
+        held = rows_with_ratio(con, f"{train_months} AND g.year = {year}", skip_year=year)
+        train = rows_of(con, f"{train_months} AND g.year <> {year}")
+        estimates = [held["flat"], held["ratio"]] + [fit_predict_scoped(train, held, v) for v in COUNTRY_CANDIDATES]
+        store(con, "held_out", held, estimates, append=position > 0)
+        print(f"  left out {year}: done", flush=True)
+    print()
+    inside = scores(con, "held_out", names, f"ym BETWEEN {TRAIN_FROM_YM} AND {TRAIN_TO_YM}")
+    show(f"Inside {years[0]} to {years[-1]}, one year left out at a time:", inside, names)
+
+    def mean_error(name, country):
+        r = inside[name]["by_country"].get(country, {})
+        values = [r.get(k) for k in ("monthly", "yearly", "region")]
+        return sum(values) / 3 if all(v is not None for v in values) else float("inf")
+
+    countries = sorted(inside["ratio"]["by_country"])
+    choice = {c: min(COUNTRY_CANDIDATES, key=lambda v: mean_error(name_of(v), c)) for c in countries}
+    for c in countries:
+        print(f"Chosen for {c}: {name_of(choice[c])} ({mean_error(name_of(choice[c]), c) * 100:.1f}%, "
+              f"ratio method {mean_error('ratio', c) * 100:.1f}%)")
+    print()
+    result = {"inside": inside, "choice": {c: list(v) for c, v in choice.items()}, "test": None, "decision": None}
+    if not run_test:
+        return result
+
+    # The final test, run once: each country's choice, learned on all of 2012 to 2019.
+    test = rows_with_ratio(con, f"g.ym BETWEEN {TEST_FROM_YM} AND {TEST_TO_YM}")
+    train = rows_of(con, train_months)
+    test_country = np.array([str(value) for value in test["country"]])
+    chosen = np.full(len(test["year"]), np.nan)
+    for variant in sorted(set(choice.values())):
+        estimate = fit_predict_scoped(train, test, variant)
+        for c in countries:
+            if choice[c] == variant:
+                chosen[test_country == c] = estimate[test_country == c]
+    final_names = ["flat", "ratio", "model"]
+    store(con, "tested", test, [test["flat"], test["ratio"], chosen], append=False)
+    final = scores(con, "tested", final_names, f"ym BETWEEN {TEST_FROM_YM} AND {TEST_TO_YM}")
+    show("Final test, learned on 2012 to 2019, tested on 2020 to 2025 (model = each country's choice):",
+         final, final_names)
+
+    decision = {}
+    for c in countries:
+        m, r = final["model"]["by_country"][c], final["ratio"]["by_country"][c]
+        wins = (m["monthly"] <= r["monthly"] - MONTHLY_MARGIN and m["yearly"] < r["yearly"]
+                and m["region"] < r["region"])
+        decision[c] = list(choice[c]) if wins else "ratio"
+        print(f"{c}: {'model ' + name_of(choice[c]) if wins else 'ratio method'} "
+              f"(monthly {m['monthly'] * 100:.1f}% against {r['monthly'] * 100:.1f}%, "
+              f"yearly {m['yearly'] * 100:.1f}% against {r['yearly'] * 100:.1f}%, "
+              f"regions {m['region'] * 100:.1f}% against {r['region'] * 100:.1f}%)")
+    result["test"] = {name: final[name] for name in final_names}
+    result["decision"] = decision
+    return result
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument("--fixtures", action="store_true", help="run on the small fake data set")
     parser.add_argument("--test", action="store_true", help="also run the final test on 2020 to 2025")
     parser.add_argument("--chosen-only", action="store_true",
                         help="compare only the chosen version with the ratio method (for re-checking on new countries)")
+    parser.add_argument("--per-country", action="store_true",
+                        help="choose a model for each country and decide, country by country, model or ratio")
     args = parser.parse_args()
     global ONLY_CHOSEN
     ONLY_CHOSEN = args.chosen_only
@@ -360,6 +509,14 @@ def main():
 
     con = duckdb.connect()
     load(con, data_dir)
+    if args.per_country:
+        print(f"Data: {data_dir}")
+        print()
+        result = per_country(con, data_dir, args.test)
+        path = data_dir / "ml_result_per_country.json"
+        path.write_text(json.dumps(result, indent=2) + "\n", encoding="utf-8")
+        print(f"Wrote {path}")
+        return
     train_months = f"g.ym BETWEEN {TRAIN_FROM_YM} AND {TRAIN_TO_YM}"
     years = [row[0] for row in con.execute(f"SELECT DISTINCT year FROM feat g WHERE {train_months} ORDER BY 1").fetchall()]
     n_train = con.execute(f"SELECT count(*) FROM feat g WHERE {train_months}").fetchone()[0]
