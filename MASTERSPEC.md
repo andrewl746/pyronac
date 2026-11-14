@@ -666,7 +666,7 @@ Parameters: the box, optional `year` and `month` (default: `last_complete_month`
 - `absolute` = target minus median. `percent` = `absolute / median * 100`, or `null` when the median is 0. Both rounded to 1 place.
 - `rank` = 1 plus the number of baseline years strictly above the target. `of` = `n_years + 1`.
 - `percentile` = 100 times the share of baseline years strictly below the target, rounded to 1 place.
-- `label` from `percentile`: 90 or more "well above normal", 75 or more "above normal", above 25 "near normal", above 10 "below normal", otherwise "well below normal".
+- `label` from `percentile`: 90 or more "well above normal", 75 or more "above normal", above 25 "near normal", above 10 "below normal", otherwise "well below normal". One exception: when the target equals the median, the label is "near normal" whatever the percentile. Without it, a month with no hot spots where none is usual would read as "well below normal".
 
 When the target month is not complete, return the numbers as they are with `complete: false`. Do not scale them up. The frontend labels it as a partial month.
 
@@ -2304,7 +2304,7 @@ export const mock = {
         rank: sorted.filter((v) => v > target.harmonized).length + 1,
         of: sorted.length + 1,
         percentile,
-        label: labelFor(percentile),
+        label: target.harmonized === median ? "near normal" : labelFor(percentile),
       },
       history,
     };
