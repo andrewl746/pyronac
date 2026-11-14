@@ -150,7 +150,7 @@ export default function MapView() {
     [setBbox],
   );
   const cancelDrawing = useCallback(() => setDrawing(false), []);
-  useDrawBox(map, drawing, finishDrawing, cancelDrawing);
+  const drawProblem = useDrawBox(map, drawing, finishDrawing, cancelDrawing);
 
   // Hovering a cell shows its exact numbers. Hidden layers get no mouse events, so only the
   // current view answers.
@@ -266,8 +266,11 @@ export default function MapView() {
           </div>
         )}
         {drawing && (
-          <span role="status" className="rounded-md bg-[var(--panel)]/90 px-2 py-1 text-xs text-[var(--text-dim)]">
-            Press, drag and release on the map. Esc cancels.
+          <span
+            role="status"
+            className={`rounded-md bg-[var(--panel)]/90 px-2 py-1 text-xs ${drawProblem ? "text-[var(--accent)]" : "text-[var(--text-dim)]"}`}
+          >
+            {drawProblem ?? "Press, drag and release on the map. Esc cancels."}
           </span>
         )}
       </div>
