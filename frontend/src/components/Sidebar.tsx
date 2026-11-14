@@ -4,6 +4,8 @@ import { ModeNote } from "./controls/ModeNote";
 import { YearRange } from "./controls/YearRange";
 import { Downloads } from "./downloads/Downloads";
 import RegionPanel from "./region/RegionPanel";
+import { Summary } from "./summary/Summary";
+import { TrendPanel } from "./trend/TrendPanel";
 
 // The order of the panels, from MASTERSPEC.md section 8:
 // region, years, calendar, compare, trend and summary (Yuvi, later), downloads and method note.
@@ -18,6 +20,8 @@ export default function Sidebar() {
       </section>
       <Calendar />
       <ComparePanel />
+      <TrendPanel />
+      <Summary />
       <Downloads />
     </div>
   );
