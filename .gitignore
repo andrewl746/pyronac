@@ -1,0 +1,26 @@
+# Data: only the small fake fixtures are committed
+data/raw/
+data/interim/
+data/processed/
+*.duckdb
+*.duckdb.wal
+
+# Secrets
+.env
+.env.local
+
+# Python
+.venv/
+__pycache__/
+*.pyc
+.pytest_cache/
+
+# Node
+node_modules/
+dist/
+
+# Editors and operating systems
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
