@@ -28,7 +28,7 @@ export function Segmented<T extends string>({ label, describedBy, options, value
             type="button"
             aria-pressed={on}
             onClick={() => onChange(option.value)}
-            className="flex cursor-pointer items-center gap-1.5 px-2.5 py-1 text-xs focus-visible:outline-offset-[-2px]"
+            className="segmented-option flex cursor-pointer items-center gap-1.5 px-2.5 py-1 text-xs"
             style={{
               background: on ? "var(--accent)" : "transparent",
               color: on ? "var(--bg)" : "var(--text)",
