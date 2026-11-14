@@ -1,4 +1,5 @@
 // The year range: two selects, limited by the months the data covers.
+import { useEffect } from "react";
 import { useMeta } from "../../api/hooks";
 import { useStore } from "../../state/store";
 
@@ -17,6 +18,16 @@ export function YearRange() {
   const last = meta.data ? yearOf(meta.data.last_month) : endYear;
   const years: number[] = [];
   for (let year = first; year <= last; year++) years.push(year);
+
+  // The store starts at 2003 to 2026. When the data covers less (for example it ends in 2025),
+  // pull the range inside it, so the selects never hold a year they cannot show.
+  const loaded = meta.data !== undefined;
+  useEffect(() => {
+    if (!loaded) return;
+    const nextStart = Math.min(Math.max(startYear, first), last);
+    const nextEnd = Math.min(Math.max(endYear, nextStart), last);
+    if (nextStart !== startYear || nextEnd !== endYear) setYears(nextStart, nextEnd);
+  }, [loaded, first, last, startYear, endYear, setYears]);
 
   function change(nextStart: number, nextEnd: number) {
     setYears(nextStart, nextEnd);
