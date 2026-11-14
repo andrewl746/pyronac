@@ -13,6 +13,7 @@ import AnomalyLegend from "./AnomalyLegend";
 import { addFireLayers, FIRE_LAYER_IDS, LAYER_FILL, setFireData } from "./fire";
 import { mapPeriod, parseYearMonth, ym } from "./labels";
 import Legend from "./Legend";
+import MonthPicker from "./MonthPicker";
 import "./map.css";
 import { addSelectionLayers, setSelectedBox, useDrawBox } from "./selection";
 import { useTimeLapse } from "./timeLapse";
@@ -25,7 +26,7 @@ maplibregl.setWorkerUrl(workerUrl);
 // The opening view from MASTERSPEC.md section 8: the globe, centred over Canada.
 const START = { center: [-100, 55] as [number, number], zoom: 1.8 };
 
-// "fire" shows the hot spots (red hatching). "anomaly" shows how unusual one month is (extra #3).
+// "fire" shows the hot spots (red gradient). "anomaly" shows how unusual one month is (extra #3).
 type View = "fire" | "anomaly";
 
 function reducedMotion(): boolean {
@@ -339,7 +340,9 @@ export default function MapView() {
           loading={grid.isPending}
           failed={grid.isError}
           note={scaleNote}
-        />
+        >
+          <MonthPicker />
+        </Legend>
       )}
       <TimeLapseBar timeLapse={timeLapse} enabled={!anomalyOn} />
     </>
