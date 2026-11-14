@@ -21,6 +21,7 @@ export const HATCH_LEVELS = [
 const SOURCE_CELLS = "fire-cells";
 const SOURCE_OUTLINE = "fire-outline";
 export const LAYER_FILL = "fire-hatch";
+export const FIRE_LAYER_IDS = ["fire-tint", LAYER_FILL, "fire-outline"];
 
 // Counts are very uneven, so intensity follows scaleValue (a log scale) from lib/colors.ts.
 // The count at a given intensity: the inverse of scaleValue, for the legend.
