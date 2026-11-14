@@ -168,16 +168,21 @@ def run(con, out_dir, data_through):
 
     validation = result["validation"] if result else None
     if ml:
+        all_countries = [country for country, _ in country_ratios]
+        on_ratio = [country for country in all_countries if country not in ml["plan"]]
         notes = (
-            f"Gradient boosting model ({ml['version']}) that estimates the Suomi NPP count of a cell and month "
-            f"from what MODIS saw, learned on {ml['rows']:,d} cell-months. Where the model has no estimate the "
-            "ratio method is used. Ratio method: " + notes
+            "For 2003 to January 2012, a gradient boosting model estimates the Suomi NPP count of a cell and "
+            "month from what MODIS saw, for "
+            + ", ".join(f"{country} ({version})" for country, version in ml["plan"].items())
+            + (f"; the ratio method is used for {', '.join(on_ratio)}, where it tested better" if on_ratio else "")
+            + f". Models learned on {ml['rows']:,d} cell-months. Where a model has no estimate the ratio method "
+            "is used. Ratio method: " + notes
         )
         if validation and ml["test"]:
             validation = dict(validation)
-            validation["metric"] = validation["metric"].replace("ratios learned", "model learned")
+            validation["metric"] = validation["metric"].replace("ratios learned", "methods learned")
             validation["harmonized_error"] = round(ml["test"]["monthly"], 4)
-        print(f"  ML model used for the MODIS era: {ml['version']}")
+        print(f"  ML model used for the MODIS era: {ml['plan']}; ratio method for: {on_ratio or 'none'}")
 
     summary = {
         "method": "ml" if ml else "ratio",
