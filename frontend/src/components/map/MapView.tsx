@@ -1,5 +1,6 @@
 import * as maplibregl from "maplibre-gl";
 import "maplibre-gl/dist/maplibre-gl.css";
+import workerUrl from "maplibre-gl/dist/maplibre-gl-worker.mjs?url";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useAnomaly, useGrid, useMeta } from "../../api/hooks";
 import type { Bbox } from "../../api/types";
@@ -14,6 +15,10 @@ import { mapPeriod, parseYearMonth, ym } from "./labels";
 import Legend from "./Legend";
 import "./map.css";
 import { addSelectionLayers, setSelectedBox, useDrawBox } from "./selection";
+
+// After bundling, MapLibre looks for its worker next to the bundle, where it is not (issue #22).
+// Importing it with ?url makes Vite copy it into dist/assets; this points MapLibre at that copy.
+maplibregl.setWorkerUrl(workerUrl);
 
 // The opening view from MASTERSPEC.md section 8: the globe, centred over Canada.
 const START = { center: [-100, 55] as [number, number], zoom: 1.8 };
