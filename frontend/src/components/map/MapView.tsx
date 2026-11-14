@@ -4,7 +4,7 @@ import workerUrl from "maplibre-gl/dist/maplibre-gl-worker.mjs?url";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useAnomaly, useGrid, useMeta } from "../../api/hooks";
 import type { Bbox } from "../../api/types";
-import { snapBbox, WORLD } from "../../lib/geo";
+import { snapBbox, WORLD, WORLD_STEP } from "../../lib/geo";
 import { useStore } from "../../state/store";
 import { BASEMAP, FIRST_LABEL_LAYER } from "./basemap";
 import { formatCount, formatMonthYear } from "../../lib/format";
@@ -15,6 +15,8 @@ import { mapPeriod, parseYearMonth, ym } from "./labels";
 import Legend from "./Legend";
 import "./map.css";
 import { addSelectionLayers, setSelectedBox, useDrawBox } from "./selection";
+import { useTimeLapse } from "./timeLapse";
+import TimeLapseBar from "./TimeLapseBar";
 
 // After bundling, MapLibre looks for its worker next to the bundle, where it is not (issue #22).
 // Importing it with ?url makes Vite copy it into dist/assets; this points MapLibre at that copy.
@@ -22,8 +24,6 @@ maplibregl.setWorkerUrl(workerUrl);
 
 // The opening view from MASTERSPEC.md section 8: the globe, centred over Canada.
 const START = { center: [-100, 55] as [number, number], zoom: 1.8 };
-// With no box selected the map asks for the whole world in 1 degree cells.
-const WORLD_STEP = 10;
 
 // "fire" shows the hot spots (red hatching). "anomaly" shows how unusual one month is (extra #3).
 type View = "fire" | "anomaly";
@@ -61,6 +61,15 @@ export default function MapView() {
   // complete month, as the compare panel does. It needs a box, like every hook but useGrid.
   const [view, setView] = useState<View>("fire");
   const anomalyOn = view === "anomaly";
+  // The time-lapse (extra #9) plays in the hot spots view and fixes the scale across its months.
+  const timeLapse = useTimeLapse(!anomalyOn);
+  const scaleMax = timeLapse.scaleMax;
+  const firstShown = timeLapse.months[0];
+  const lastShown = timeLapse.months[timeLapse.months.length - 1];
+  const scaleNote =
+    scaleMax !== null && firstShown && lastShown
+      ? `Scale fixed across ${formatMonthYear(firstShown.year, firstShown.month)} to ${formatMonthYear(lastShown.year, lastShown.month)}, so months compare fairly.`
+      : undefined;
   const meta = useMeta();
   const anomalyMonth = selected ?? parseYearMonth(meta.data?.last_complete_month);
   const anomalyLabel = anomalyMonth ? formatMonthYear(anomalyMonth.year, anomalyMonth.month) : null;
@@ -111,8 +120,8 @@ export default function MapView() {
 
   // Draw the fire cells whenever new grid data arrives.
   useEffect(() => {
-    if (map) setFireData(map, grid.data);
-  }, [map, grid.data]);
+    if (map) setFireData(map, grid.data, scaleMax ?? undefined);
+  }, [map, grid.data, scaleMax]);
 
   // Draw the anomaly cells. With no box there is nothing to compare, so the layer is emptied.
   useEffect(() => {
@@ -138,7 +147,8 @@ export default function MapView() {
           [bbox.west, bbox.south],
           [bbox.east, bbox.north],
         ],
-        { padding: 64, maxZoom: 10, animate, duration: 1400 },
+        // Extra room at the bottom keeps the box clear of the time-lapse bar.
+        { padding: { top: 64, right: 64, bottom: 110, left: 64 }, maxZoom: 10, animate, duration: 1400 },
       );
     } else if (hadBox.current) {
       map.flyTo({ center: START.center, zoom: START.zoom, animate, duration: 1400 });
@@ -323,13 +333,15 @@ export default function MapView() {
         />
       ) : (
         <Legend
-          max={grid.data?.max ?? 0}
+          max={scaleMax ?? grid.data?.max ?? 0}
           step={grid.data?.step ?? WORLD_STEP}
           period={period.label}
           loading={grid.isPending}
           failed={grid.isError}
+          note={scaleNote}
         />
       )}
+      <TimeLapseBar timeLapse={timeLapse} enabled={!anomalyOn} />
     </>
   );
 }
