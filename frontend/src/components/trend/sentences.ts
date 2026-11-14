@@ -58,3 +58,15 @@ export function trendSentence(data: TrendResponse): string {
   }
   return `${raw} ${harmonized}`;
 }
+
+// "The fire season moved about 4 days earlier per decade from 2003 to 2025." (MASTERSPEC.md section 13,
+// item 5.) Null when the API has no season fit (fewer than 5 years with fire).
+export function seasonSentence(data: TrendResponse): string | null {
+  const shift = data.season_shift;
+  if (!shift) return null;
+  const span = `${data.start_year} to ${data.end_year}`;
+  const days = Math.round(Math.abs(shift.days_per_decade));
+  if (shift.p_value >= 0.05 || days === 0) return `The fire season shows no clear shift from ${span}.`;
+  const way = shift.days_per_decade < 0 ? "earlier" : "later";
+  return `The fire season moved about ${days} ${days === 1 ? "day" : "days"} ${way} per decade from ${span}.`;
+}

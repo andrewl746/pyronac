@@ -2,8 +2,9 @@
 import { useMeta, useTrend } from "../../api/hooks";
 import { formatCount } from "../../lib/format";
 import { useStore } from "../../state/store";
+import { SeasonChart } from "./SeasonChart";
 import { TrendChart } from "./TrendChart";
-import { trendSentence, trendYears } from "./sentences";
+import { seasonSentence, trendSentence, trendYears } from "./sentences";
 
 function Key({ swatch, children }: { swatch: React.CSSProperties; children: React.ReactNode }) {
   return (
@@ -36,6 +37,7 @@ export function TrendPanel() {
     const data = trend.data;
     const sentence = trendSentence(data);
     const fit = data.harmonized_trend;
+    const season = seasonSentence(data);
     body = (
       <div className="flex flex-col gap-2">
         <p aria-live="polite">{sentence}</p>
@@ -53,6 +55,18 @@ export function TrendPanel() {
           Harmonized slope {formatCount(Math.round(fit.slope_per_year))} hot spots a year, p = {fit.p_value.toFixed(3)}.
           Full years only.
         </p>
+        {season && (
+          <div className="mt-2 flex flex-col gap-2">
+            <h3 className="text-xs font-semibold">Fire season</h3>
+            <p>{season}</p>
+            <div
+              role="img"
+              aria-label={`Line chart of the month at the centre of each year's fire season, ${data.start_year} to ${data.end_year}. ${season}`}
+            >
+              <SeasonChart data={data} />
+            </div>
+          </div>
+        )}
       </div>
     );
   }
