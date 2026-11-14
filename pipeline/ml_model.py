@@ -72,6 +72,7 @@ def load(con, data_dir, keep_grid_counts=False):
     folder = data_dir.as_posix()
     if not keep_grid_counts:
         con.execute(f"CREATE OR REPLACE TABLE grid_counts AS SELECT * FROM read_parquet('{folder}/grid_counts.parquet')")
+        harmonize.apply_saved_fill(con, data_dir)
     con.execute(
         f"""
         CREATE OR REPLACE TABLE modis_detail AS

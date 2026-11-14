@@ -141,6 +141,7 @@ def main():
 
     con = duckdb.connect()
     con.execute(f"CREATE TABLE grid_counts AS SELECT * FROM read_parquet('{(out_dir / 'grid_counts.parquet').as_posix()}')")
+    harmonize.apply_saved_fill(con, out_dir)
     result = evaluate(con)
     if result is None:
         print(f"Cannot validate: {out_dir} needs months in {TRAIN_YEARS[0]} to {TRAIN_YEARS[1]} "
@@ -166,7 +167,7 @@ def main():
     print("|---|---|---|---|---|---|")
     for row in result["by_year"]:
         diff = "n/a" if row["snpp"] == 0 else f"{(row['estimate'] - row['snpp']) / row['snpp'] * 100:+.1f}%"
-        print(f"| {row['country']} | {row['year']} | {row['modis']:,d} | {row['estimate']:,.0f} | {row['snpp']:,d} | {diff} |")
+        print(f"| {row['country']} | {row['year']} | {row['modis']:,d} | {row['estimate']:,.0f} | {row['snpp']:,.0f} | {diff} |")
 
     path = out_dir / "harmonization.json"
     summary = json.loads(path.read_text(encoding="utf-8")) if path.exists() else None

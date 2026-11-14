@@ -380,7 +380,7 @@ Things that differ between files and trip people up:
 Applied the same way to every file. The SQL in `pipeline/build.py` (Appendix A) is the exact definition.
 
 1. Drop low-confidence detections: MODIS `confidence` below 30, VIIRS `confidence` starting with `l`.
-2. Keep only presumed vegetation fires: `type` is 0 or missing.
+2. Keep only presumed vegetation fires: `type` is 0 or missing. Near-real-time files have no `type` column, so their detections are dropped instead at 0.005 degree spots that the labelled VIIRS files mark as non-fire at least 3 times and at least as often as fire (`STATIC_SPOT` in `pipeline/build.py`).
 3. Drop anything before 2003-01-01. Before then only one MODIS satellite was flying for most of the time, which would add a third inconsistency.
 4. The satellite comes from the folder the file is in, not from the `satellite` column, except for telling Terra from Aqua.
 5. Confidence is normalised to `nominal` or `high`. MODIS 30 to 79 is `nominal`, 80 and up is `high`.
@@ -408,7 +408,7 @@ Months are compared as one number, `ym = year * 100 + month`. January 2012 is 20
 | Era id | Months | The record in this era is |
 |---|---|---|
 | `modis` | 200301 to 201201 | MODIS counts scaled up to the VIIRS scale |
-| `snpp` | 201202 to 202610 | VIIRS on Suomi NPP, exactly as observed |
+| `snpp` | 201202 to 202610 | VIIRS on Suomi NPP as observed, with its outage days filled from NOAA-20 (section 6) |
 | `noaa20` | 202611 onwards | VIIRS on NOAA-20, times a handoff ratio close to 1 |
 
 Suomi NPP data starts on 20 January 2012 and ends on 2 November 2026. Those two partial months are deliberately left out of the `snpp` era. The constants are `MODIS_ERA_END_YM = 201201` and `SNPP_ERA_END_YM = 202610` in both `pipeline/config.py` and `backend/app/config.py`.
@@ -452,6 +452,8 @@ All tables are written by `pipeline/build.py` into `data/processed/` (real) or `
 
 A month with no row for a cell means zero detections there.
 
+**`snpp_fill.parquet`** Only when Suomi NPP has outage days (section 6). One row per cell and month with `fill`: what `harmonized_count` adds to `snpp_count` there. `validate.py` and `ml_model.py` apply it when run on their own. The backend does not read it.
+
 **`harmonization.json`** How `harmonized_count` was made. The backend passes it through in `/api/meta`.
 
 ```json
@@ -492,10 +494,12 @@ The fixtures are committed to git. Backend tests always run on them.
 | Era | `harmonized_count` |
 |---|---|
 | `modis` | MODIS count converted to the VIIRS scale |
-| `snpp` | `snpp_count`, unchanged |
+| `snpp` | `snpp_count`, except on Suomi NPP's outage days, which use NOAA-20 times the handoff ratio |
 | `noaa20` | `noaa20_count` times the handoff ratio |
 
 Because it is defined per cell and per month, the harmonized count for any area and any period is simply the sum. Every endpoint relies on that.
+
+An outage day is a day when Suomi NPP reported under a quarter of NOAA-20's count in the country, with NOAA-20 at 20 or more (53 days in Canada from April 2018 to October 2026, including 10 to 16 July 2026). On those days the count comes from NOAA-20 instead, because a day with no data is not a day with no fire. `snpp_count` and `points` keep what Suomi NPP reported.
 
 ### The interface
 
@@ -508,7 +512,7 @@ def run(con, out_dir, data_through): ...
 - It reads the DuckDB table `grid_counts` from the connection `con`.
 - It creates the DuckDB table `grid`: every column of `grid_counts` plus `harmonized_count`.
 - It writes `harmonization.json` into `out_dir`.
-- In the `snpp` era `harmonized_count` must equal `snpp_count` exactly.
+- In the `snpp` era `harmonized_count` must equal `snpp_count` exactly, except in a cell and month with a Suomi NPP outage day, where it is higher.
 
 Nothing else about it may be assumed by other code.
 
@@ -1069,7 +1073,7 @@ These checks are run on `main` at every checkpoint, and by you on your own branc
 - **D2.** `grid.parquet` has no two rows with the same `cell_x`, `cell_y`, `year`, `month`.
 - **D3.** All counts are 0 or more. `harmonized_count` is never null or negative.
 - **D4.** `snpp_count` is 0 for every month before 201201. `noaa20_count` is 0 before 201804.
-- **D5.** In the `snpp` era, `harmonized_count` equals `snpp_count` in every row.
+- **D5.** In the `snpp` era, `harmonized_count` equals `snpp_count` in every row, except rows in `snpp_fill.parquet` (Suomi NPP's outage days, section 6), where it equals `snpp_count` plus `fill`.
 - **D6.** For any month, the number of rows in `points` for a sensor equals the matching sum in `grid`: MODIS rows equal `sum(modis_count)`, and VIIRS rows equal the sum of that era's VIIRS count (`snpp_count` in the `snpp` era, `noaa20_count` in the `noaa20` era, no VIIRS rows in the `modis` era).
 
 ### Backend
@@ -1077,7 +1081,7 @@ These checks are run on `main` at every checkpoint, and by you on your own branc
 - **B1.** `pytest`, run from the `backend` folder, passes on the fixtures.
 - **B2.** Every response has exactly the field names in `types.ts`. No extra top-level fields, none missing.
 - **B3.** `/api/calendar` is dense and ordered (287 months for 2003 to 2026 on current data).
-- **B4.** In the `modis` era `viirs` is null and `raw` equals `modis`. In the `snpp` era `harmonized` equals `viirs`.
+- **B4.** In the `modis` era `viirs` is null and `raw` equals `modis`. In the `snpp` era `harmonized` equals `viirs`, except in a month with a Suomi NPP outage day (section 6).
 - **B5.** `/api/grid` cell values for one month add up to that month's `harmonized` in `/api/calendar`, at every `step`.
 - **B6.** `/api/points/count` by sensor equals `modis` and `viirs` in `/api/calendar` for the same box and month.
 - **B7.** The returned `bbox` contains the requested box, and its edges are multiples of 0.1.
@@ -1466,6 +1470,16 @@ MODIS_KEEP = f"TRY_CAST(confidence AS INTEGER) >= {config.MODIS_MIN_CONFIDENCE}"
 VIIRS_CONFIDENCE = "CASE lower(substr(confidence, 1, 1)) WHEN 'h' THEN 'high' ELSE 'nominal' END"
 VIIRS_KEEP = "lower(substr(confidence, 1, 1)) IN ('n', 'h')"
 
+# Near-real-time files have no "type" column, so rule 2 cannot drop their non-fire sources (gas flares,
+# industry). Their detections are dropped at small spots that the labelled VIIRS files mark as non-fire.
+# Tested on 2025 as if unlabelled: October goes from 21.5% too high to 0.0%, and 0.05% of real fires are dropped.
+STATIC_SPOT = 0.005       # degrees, the size of a spot
+STATIC_MIN_NONFIRE = 3    # labelled non-fire detections a spot needs, and they must be at least half of its detections
+UNLABELLED_STATIC = (
+    '"type" IS NULL AND EXISTS (SELECT 1 FROM static_spots s '
+    f"WHERE s.a = floor(latitude / {STATIC_SPOT}) AND s.b = floor(longitude / {STATIC_SPOT}))"
+)
+
 
 def load_clean(con, raw_dir):
     """Read every raw file into one table, applying the cleaning rules."""
@@ -1476,6 +1490,22 @@ def load_clean(con, raw_dir):
             sensor VARCHAR, satellite VARCHAR, confidence VARCHAR, frp DOUBLE, daynight VARCHAR,
             country VARCHAR, cell_x INTEGER, cell_y INTEGER, year INTEGER, month INTEGER
         )
+        """
+    )
+    labelled = [
+        f"""SELECT latitude, longitude, "type" FROM read_csv('{(raw_dir / s).as_posix()}/*.csv', header = true,
+                    union_by_name = true, types = {CSV_TYPES})
+            WHERE "type" IS NOT NULL AND {VIIRS_KEEP}"""
+        for s in ("viirs-snpp", "viirs-jpss1") if list((raw_dir / s).glob("*.csv"))
+    ]
+    con.execute(
+        f"""
+        CREATE OR REPLACE TABLE static_spots AS
+        SELECT floor(latitude / {STATIC_SPOT}) AS a, floor(longitude / {STATIC_SPOT}) AS b
+        FROM ({" UNION ALL ".join(labelled) if labelled else "SELECT NULL::DOUBLE AS latitude, NULL::DOUBLE AS longitude, NULL::INTEGER AS type WHERE false"})
+        GROUP BY 1, 2
+        HAVING count(*) FILTER (WHERE "type" <> 0) >= {STATIC_MIN_NONFIRE}
+           AND count(*) FILTER (WHERE "type" <> 0) >= count(*) FILTER (WHERE "type" = 0)
         """
     )
     for source, info in config.SOURCES.items():
@@ -1506,6 +1536,7 @@ def load_clean(con, raw_dir):
                           filename = true, types = {CSV_TYPES})
             WHERE latitude IS NOT NULL AND longitude IS NOT NULL AND acq_date IS NOT NULL
               AND ("type" IS NULL OR "type" = 0)
+              AND NOT ({UNLABELLED_STATIC})
               AND {MODIS_KEEP if is_modis else VIIRS_KEEP}
               AND year(acq_date) * 100 + month(acq_date) >= {config.FIRST_YM}
             """
@@ -1547,9 +1578,9 @@ def build_grid_counts(con):
             CAST(count(*) FILTER (WHERE sensor = 'MODIS') AS INTEGER) AS modis_count,
             CAST(count(*) FILTER (WHERE satellite = 'SNPP') AS INTEGER) AS snpp_count,
             CAST(count(*) FILTER (WHERE satellite = 'NOAA20') AS INTEGER) AS noaa20_count,
-            coalesce(sum(frp) FILTER (WHERE sensor = 'MODIS'), 0) AS modis_frp_sum,
-            coalesce(sum(frp) FILTER (WHERE satellite = 'SNPP'), 0) AS snpp_frp_sum,
-            coalesce(sum(frp) FILTER (WHERE satellite = 'NOAA20'), 0) AS noaa20_frp_sum
+            coalesce(CAST(sum(CAST(frp AS DECIMAL(18, 3))) FILTER (WHERE sensor = 'MODIS') AS DOUBLE), 0) AS modis_frp_sum,
+            coalesce(CAST(sum(CAST(frp AS DECIMAL(18, 3))) FILTER (WHERE satellite = 'SNPP') AS DOUBLE), 0) AS snpp_frp_sum,
+            coalesce(CAST(sum(CAST(frp AS DECIMAL(18, 3))) FILTER (WHERE satellite = 'NOAA20') AS DOUBLE), 0) AS noaa20_frp_sum
         FROM clean
         GROUP BY cell_x, cell_y, year, month
         ORDER BY cell_x, cell_y, year, month
