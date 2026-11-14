@@ -136,15 +136,25 @@ def fill_outages(con):
         HAVING count(*) FILTER (WHERE c.satellite = 'NOAA20') > 0
         """
     )
+    # Each fill is rounded to a multiple of 1/1024. Such numbers add up exactly in floating point, so the
+    # filled counts, and every sum of them that the ratios and the model use, come out the same in any
+    # order. Otherwise sums added up across threads would change in their last digits from one build to
+    # the next, and that is enough to change the model (see ml_model.py). The rounding moves a cell's
+    # count by at most 0.0005.
     con.execute(
         """
         INSERT INTO snpp_fill
-        SELECT c.cell_x, c.cell_y, c.year, c.month,
-               sum(CASE WHEN c.satellite = 'NOAA20' THEN r.ratio ELSE -1.0 END)
-        FROM clean c
-        JOIN outage_days o ON o.country = c.country AND o.acq_date = c.acq_date
-        JOIN fill_ratio r ON r.country = c.country
-        WHERE c.satellite IN ('SNPP', 'NOAA20')
+        SELECT cell_x, cell_y, year, month, sum(fill)
+        FROM (
+            SELECT c.cell_x, c.cell_y, c.year, c.month,
+                   round((count(*) FILTER (WHERE c.satellite = 'NOAA20') * r.ratio
+                          - count(*) FILTER (WHERE c.satellite = 'SNPP')) * 1024) / 1024 AS fill
+            FROM clean c
+            JOIN outage_days o ON o.country = c.country AND o.acq_date = c.acq_date
+            JOIN fill_ratio r ON r.country = c.country
+            WHERE c.satellite IN ('SNPP', 'NOAA20')
+            GROUP BY c.cell_x, c.cell_y, c.year, c.month, c.country, r.ratio
+        )
         GROUP BY 1, 2, 3, 4
         """
     )

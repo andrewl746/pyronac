@@ -499,7 +499,7 @@ The fixtures are committed to git. Backend tests always run on them.
 
 Because it is defined per cell and per month, the harmonized count for any area and any period is simply the sum. Every endpoint relies on that.
 
-An outage day is a day when Suomi NPP reported under a quarter of NOAA-20's count in the country, with NOAA-20 at 20 or more (53 days in Canada from April 2018 to October 2026, including 10 to 16 July 2026). On those days the count comes from NOAA-20 instead, because a day with no data is not a day with no fire. `snpp_count` and `points` keep what Suomi NPP reported.
+An outage day is a day when Suomi NPP reported under a quarter of NOAA-20's count in the country, with NOAA-20 at 20 or more (from April 2018 to October 2026: 53 days in Canada, 58 in India and 59 in Brazil, mostly the same dates, including 11 to 16 July 2026). On those days the count comes from NOAA-20 instead, because a day with no data is not a day with no fire. `snpp_count` and `points` keep what Suomi NPP reported.
 
 ### The interface
 
