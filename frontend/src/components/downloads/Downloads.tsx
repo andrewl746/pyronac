@@ -21,10 +21,6 @@ function monthRange(year: number, month: number): [string, string] {
   return [`${year}-${pad(month)}-01`, `${year}-${pad(month)}-${pad(lastDay)}`];
 }
 
-// A date input keeps focus while its picker button is focused, where :focus-visible does not apply,
-// so it gets its ring on :focus.
-const dateClass =
-  "rounded border px-1.5 py-1 focus:outline-2 focus:outline-offset-2 focus:outline-[var(--focus)] focus:outline-solid";
 const buttonClass = "inline-block cursor-pointer rounded border px-2.5 py-1 text-xs no-underline";
 const buttonStyle = { borderColor: "var(--border)", background: "var(--panel-2)", color: "var(--text)" };
 const disabledStyle = { ...buttonStyle, color: "var(--text-dim)", cursor: "not-allowed" };
@@ -87,7 +83,7 @@ export function Downloads() {
               type="date"
               value={start}
               onChange={(event) => setEdited({ key: defaultKey, start: event.target.value, end })}
-              className={dateClass}
+              className="rounded border px-1.5 py-1"
               style={{ ...buttonStyle, colorScheme: "dark" }}
             />
           </label>
@@ -97,7 +93,7 @@ export function Downloads() {
               type="date"
               value={end}
               onChange={(event) => setEdited({ key: defaultKey, start, end: event.target.value })}
-              className={dateClass}
+              className="rounded border px-1.5 py-1"
               style={{ ...buttonStyle, colorScheme: "dark" }}
             />
           </label>
