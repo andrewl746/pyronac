@@ -34,6 +34,13 @@ body {
   outline-offset: 2px;
 }
 
+/* The options of a switch sit inside a clipped, rounded frame, so their ring is drawn inside
+   the button. A second, dark line keeps it visible on the orange selected option. */
+.segmented-option:focus-visible {
+  outline-offset: -2px;
+  box-shadow: inset 0 0 0 4px var(--bg);
+}
+
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,
