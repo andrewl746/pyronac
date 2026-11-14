@@ -57,9 +57,12 @@ outline is at the end of this file.
   calendar marks the handoff with a line and a label.
 - **See the trend, raw against harmonized.** A chart of yearly totals with a fitted trend for each
   record, and a few plain sentences built from the numbers by a fixed template. The raw record
-  overstates the rise. For all of Canada, 2003 to 2025, both records rise, the raw one by 129% a
-  decade and the harmonized one by 82%. For the southern Amazon box the raw record rises by 48% a
-  decade while the harmonized one falls by 35%.
+  overstates the rise. For all of Canada, 2003 to 2025, both records rise, the raw one by about
+  129% a decade and the harmonized one by about 82%. **TODO (Sam):** read these two numbers again
+  from the trend panel on the final data build. They were read on the build from before the method
+  was chosen per country, and the harmonized one will have moved. On that earlier build the southern
+  Amazon box showed the raw record rising while the harmonized one fell; check whether that still
+  holds before saying it.
 - **See what is unusual on the map.** An "Anomaly" view colours each cell by how unusual the selected
   month is against the same calendar month in other years.
 - **Play it as a time-lapse.** A Play button steps through the months on the map.
