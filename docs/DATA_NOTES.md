@@ -10,7 +10,7 @@ Checksums are in [SHA256SUMS.txt](https://github.com/andrewl746/pyronac/releases
 
 | File | What it is | Size |
 |---|---|---:|
-| **[pyronac-canada-india-brazil-processed-ml-2003-2026.zip](https://github.com/andrewl746/pyronac/releases/download/data-canada-2003-2025-20261114/pyronac-canada-india-brazil-processed-ml-2003-2026.zip)** | **Use this one.** Canada, India and Brazil, 2003 to 14 Nov 2026, built with `main`'s harmonizer (method `ml`, same code as `main` today) | 698 MB |
+| **[pyronac-canada-india-brazil-processed-ml-2003-2026.zip](https://github.com/andrewl746/pyronac/releases/download/data-canada-2003-2025-20261114/pyronac-canada-india-brazil-processed-ml-2003-2026.zip)** | **Use this one.** Canada, India and Brazil, 2003 to 14 Nov 2026, built with `main`'s harmonizer (method `ml`; built with PR #28's ml_model.py, whose queries give the same values as `main`'s) | 698 MB |
 | [pyronac-canada-india-brazil-processed-2003-2026.zip](https://github.com/andrewl746/pyronac/releases/download/data-canada-2003-2025-20261114/pyronac-canada-india-brazil-processed-2003-2026.zip) | Same data, older build with the Appendix A v0 placeholder | 695 MB |
 | [pyronac-canada-2003-2025.zip](https://github.com/andrewl746/pyronac/releases/download/data-canada-2003-2025-20261114/pyronac-canada-2003-2025.zip) | First Canada-only build, through 2025, v0 | 100 MB |
 | [pyronac-canada-raw-2003-2026.zip](https://github.com/andrewl746/pyronac/releases/download/data-canada-2003-2025-20261114/pyronac-canada-raw-2003-2026.zip) | Raw FIRMS CSVs, Canada | 287 MB |
