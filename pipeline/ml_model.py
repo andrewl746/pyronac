@@ -103,23 +103,24 @@ def load(con, data_dir, keep_grid_counts=False):
     con.execute(
         """
         CREATE OR REPLACE TABLE feat AS
-        WITH near AS (
-            -- Each MODIS cell is copied to the 25 cells of the 5 by 5 window around it, then joined on
-            -- equality. A range join here pairs every cell with every cell of the same month, which
-            -- runs out of disk on all three countries.
+        WITH offsets AS (
+            SELECT ox.range AS dx, oy.range AS dy FROM range(-2, 3) ox, range(-2, 3) oy
+        ),
+        spread AS (
+            -- Each MODIS count copied onto the 5 x 5 cells around it, so the neighbour sums are a fast
+            -- equality join. dx and dy say how far away the count came from.
+            SELECT b.cell_x - o.dx AS cell_x, b.cell_y - o.dy AS cell_y, b.year, b.month, o.dx, o.dy, b.modis_count
+            FROM g b CROSS JOIN offsets o
+            WHERE b.modis_count > 0
+        ),
+        near AS (
             SELECT
                 a.cell_x, a.cell_y, a.year, a.month,
-                sum(b.modis_count) FILTER (WHERE b.inner_ring) - any_value(a.modis_count) AS near_8,
-                sum(b.modis_count) - any_value(a.modis_count) AS near_24
+                coalesce(sum(s.modis_count) FILTER (WHERE abs(s.dx) <= 1 AND abs(s.dy) <= 1
+                                                      AND NOT (s.dx = 0 AND s.dy = 0)), 0) AS near_8,
+                coalesce(sum(s.modis_count) FILTER (WHERE NOT (s.dx = 0 AND s.dy = 0)), 0) AS near_24
             FROM g a
-            JOIN (
-                SELECT s.cell_x + o.dx AS cell_x, s.cell_y + o.dy AS cell_y, s.year, s.month, s.modis_count,
-                       abs(o.dx) <= 1 AND abs(o.dy) <= 1 AS inner_ring
-                FROM g s
-                CROSS JOIN (SELECT CAST(dx.range AS INTEGER) AS dx, CAST(dy.range AS INTEGER) AS dy
-                            FROM range(-2, 3) dx, range(-2, 3) dy) o
-                WHERE s.modis_count > 0
-            ) b USING (cell_x, cell_y, year, month)
+            JOIN spread s USING (cell_x, cell_y, year, month)
             WHERE a.modis_count > 0
             GROUP BY 1, 2, 3, 4
         ),
@@ -284,6 +285,27 @@ def scores(con, table, names, where):
     totals = con.execute(f"SELECT {sums} FROM {table}").fetchone()
     for i, name in enumerate(names):
         out[name]["bias"] = totals[i] / total if total else None
+
+    # The same errors for each country on its own, monthly and yearly.
+    for name in names:
+        out[name]["by_country"] = {}
+    for level, keys in (("monthly", "country, year, month"), ("yearly", "country, year")):
+        n_keys = keys.count(",") + 1
+        actual = con.execute(
+            f"SELECT {keys}, sum(snpp_count) FROM g WHERE {where} GROUP BY ALL HAVING sum(snpp_count) >= {MIN_MONTH_TOTAL}"
+        ).fetchall()
+        estimate = {row[:n_keys]: row[n_keys:] for row in con.execute(
+            f"SELECT {keys}, {sums} FROM {table} GROUP BY ALL"
+        ).fetchall()}
+        for i, name in enumerate(names):
+            errors = {}
+            for row in actual:
+                key, snpp = row[:n_keys], row[n_keys]
+                value = estimate[key][i] if key in estimate else 0.0
+                errors.setdefault(key[0], []).append(abs(value - snpp) / snpp)
+            for country, values in errors.items():
+                out[name]["by_country"].setdefault(country, {})[level] = median(values)
+                out[name]["by_country"][country][level + "_n"] = len(values)
     return out
 
 
@@ -297,11 +319,26 @@ def show(title, result, order):
         bias = "n/a" if r["bias"] is None else f"{(r['bias'] - 1) * 100:+.1f}%"
         print(f"| {name} | {cells} | {bias} |")
     first = result[order[0]]
-    print(f"({first['monthly_n']} months, {first['yearly_n']} years, {first['region_n']} region-years)")
+    print(f"({first['monthly_n']} country-months, {first['yearly_n']} country-years, {first['region_n']} region-years)")
+    countries = sorted(first["by_country"])
+    if len(countries) > 1:
+        print()
+        print("| Method | Country | Monthly | Yearly |")
+        print("|---|---|---|---|")
+        for name in order:
+            for country in countries:
+                r = result[name]["by_country"].get(country, {})
+                cells = " | ".join("n/a" if r.get(k) is None else f"{r[k] * 100:.1f}%" for k in ("monthly", "yearly"))
+                print(f"| {name} | {country} | {cells} |")
     print()
 
 
+ONLY_CHOSEN = False  # set by --chosen-only: compare just CHOSEN with the ratio method, which is much faster
+
+
 def variants():
+    if ONLY_CHOSEN:
+        return [CHOSEN]
     return [(target, features, settings) for target in TARGETS for features in FEATURES for settings in SETTINGS]
 
 
@@ -313,7 +350,11 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument("--fixtures", action="store_true", help="run on the small fake data set")
     parser.add_argument("--test", action="store_true", help="also run the final test on 2020 to 2025")
+    parser.add_argument("--chosen-only", action="store_true",
+                        help="compare only the chosen version with the ratio method (for re-checking on new countries)")
     args = parser.parse_args()
+    global ONLY_CHOSEN
+    ONLY_CHOSEN = args.chosen_only
     data_dir = config.FIXTURES_DIR if args.fixtures else config.PROCESSED_DIR
 
     con = duckdb.connect()
