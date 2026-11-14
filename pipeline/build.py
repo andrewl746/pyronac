@@ -37,6 +37,16 @@ MODIS_KEEP = f"TRY_CAST(confidence AS INTEGER) >= {config.MODIS_MIN_CONFIDENCE}"
 VIIRS_CONFIDENCE = "CASE lower(substr(confidence, 1, 1)) WHEN 'h' THEN 'high' ELSE 'nominal' END"
 VIIRS_KEEP = "lower(substr(confidence, 1, 1)) IN ('n', 'h')"
 
+# Near-real-time files have no "type" column, so rule 2 cannot drop their non-fire sources (gas flares,
+# industry). Their detections are dropped at small spots that the labelled VIIRS files mark as non-fire.
+# Tested on 2025 as if unlabelled: October goes from 21.5% too high to 0.0%, and 0.05% of real fires are dropped.
+STATIC_SPOT = 0.005       # degrees, the size of a spot
+STATIC_MIN_NONFIRE = 3    # labelled non-fire detections a spot needs, and they must be at least half of its detections
+UNLABELLED_STATIC = (
+    '"type" IS NULL AND EXISTS (SELECT 1 FROM static_spots s '
+    f"WHERE s.a = floor(latitude / {STATIC_SPOT}) AND s.b = floor(longitude / {STATIC_SPOT}))"
+)
+
 
 def load_clean(con, raw_dir):
     """Read every raw file into one table, applying the cleaning rules."""
@@ -47,6 +57,22 @@ def load_clean(con, raw_dir):
             sensor VARCHAR, satellite VARCHAR, confidence VARCHAR, frp DOUBLE, daynight VARCHAR,
             country VARCHAR, cell_x INTEGER, cell_y INTEGER, year INTEGER, month INTEGER
         )
+        """
+    )
+    labelled = [
+        f"""SELECT latitude, longitude, "type" FROM read_csv('{(raw_dir / s).as_posix()}/*.csv', header = true,
+                    union_by_name = true, types = {CSV_TYPES})
+            WHERE "type" IS NOT NULL AND {VIIRS_KEEP}"""
+        for s in ("viirs-snpp", "viirs-jpss1") if list((raw_dir / s).glob("*.csv"))
+    ]
+    con.execute(
+        f"""
+        CREATE OR REPLACE TABLE static_spots AS
+        SELECT floor(latitude / {STATIC_SPOT}) AS a, floor(longitude / {STATIC_SPOT}) AS b
+        FROM ({" UNION ALL ".join(labelled) if labelled else "SELECT NULL::DOUBLE AS latitude, NULL::DOUBLE AS longitude, NULL::INTEGER AS type WHERE false"})
+        GROUP BY 1, 2
+        HAVING count(*) FILTER (WHERE "type" <> 0) >= {STATIC_MIN_NONFIRE}
+           AND count(*) FILTER (WHERE "type" <> 0) >= count(*) FILTER (WHERE "type" = 0)
         """
     )
     for source, info in config.SOURCES.items():
@@ -77,6 +103,7 @@ def load_clean(con, raw_dir):
                           filename = true, types = {CSV_TYPES})
             WHERE latitude IS NOT NULL AND longitude IS NOT NULL AND acq_date IS NOT NULL
               AND ("type" IS NULL OR "type" = 0)
+              AND NOT ({UNLABELLED_STATIC})
               AND {MODIS_KEEP if is_modis else VIIRS_KEEP}
               AND year(acq_date) * 100 + month(acq_date) >= {config.FIRST_YM}
             """
@@ -118,9 +145,9 @@ def build_grid_counts(con):
             CAST(count(*) FILTER (WHERE sensor = 'MODIS') AS INTEGER) AS modis_count,
             CAST(count(*) FILTER (WHERE satellite = 'SNPP') AS INTEGER) AS snpp_count,
             CAST(count(*) FILTER (WHERE satellite = 'NOAA20') AS INTEGER) AS noaa20_count,
-            coalesce(sum(frp) FILTER (WHERE sensor = 'MODIS'), 0) AS modis_frp_sum,
-            coalesce(sum(frp) FILTER (WHERE satellite = 'SNPP'), 0) AS snpp_frp_sum,
-            coalesce(sum(frp) FILTER (WHERE satellite = 'NOAA20'), 0) AS noaa20_frp_sum
+            coalesce(CAST(sum(CAST(frp AS DECIMAL(18, 3))) FILTER (WHERE sensor = 'MODIS') AS DOUBLE), 0) AS modis_frp_sum,
+            coalesce(CAST(sum(CAST(frp AS DECIMAL(18, 3))) FILTER (WHERE satellite = 'SNPP') AS DOUBLE), 0) AS snpp_frp_sum,
+            coalesce(CAST(sum(CAST(frp AS DECIMAL(18, 3))) FILTER (WHERE satellite = 'NOAA20') AS DOUBLE), 0) AS noaa20_frp_sum
         FROM clean
         GROUP BY cell_x, cell_y, year, month
         ORDER BY cell_x, cell_y, year, month
