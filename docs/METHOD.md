@@ -239,6 +239,37 @@ would (2003: 206,914 against 230,753; 2004: 307,612 against 311,836; 2010: 232,6
   mean anything moved Canada's monthly test error by almost a point, so gaps that small between
   versions of a model are noise.
 
+### An outside check on 2003 to 2011 in Canada
+
+VIIRS did not fly before 2012, so the early estimates cannot be compared with what it saw. They can
+be compared with something these satellites do not measure: the area that burned each year, as
+Canada's fire agencies report it to the National Forestry Database. Hot spots per 1,000 km² burned
+should not jump when the satellites change.
+
+| Hot spots per 1,000 km² burned, Canada | 2003 to 2011 | 2013 to 2024 | Step |
+|---|---|---|---|
+| Raw | 1,756 | 9,892 | 5.6 times |
+| Harmonized (the model, as shipped) | 8,092 | 10,075 | 1.25 times |
+| Ratio method, for comparison | 8,628 | 10,075 | 1.17 times |
+| MODIS alone, which flew through both periods | 1,756 | 1,804 | 1.03 times |
+
+Each period's hot spots and area are added up, so big years count more. 2012 is left out because it
+is split between the satellites. From 2013 the harmonized record includes the outage fill, so it is a
+little above the raw count.
+
+Harmonization removes most of the 2012 jump, but not all of it. MODIS on its own rises 3% over whole
+years (17% in the fire season, May to September), so a real change in the fires explains only part of
+the step that is left. On this check the 2003 to 2011 estimates look low: they would need to be about
+15 to 21% higher to match. So a comparison across 2012 in Canada can overstate a rise by up to about
+that much. The ratio method leaves most of the same gap, which points at what both methods assume:
+that MODIS and Suomi NPP relate before 2012 as they do after. We kept the model for Canada after this
+check, because it won the test fixed in advance and switching would close only a small part of the
+gap. Nine early years against twelve later ones, with area as the agencies report it, make this
+weaker evidence than that test. But it is the only check on the years the test cannot reach.
+
+(Area burned: Environment and Climate Change Canada, "Area burned by forest fires by region, Canada,
+1990 to 2024", from the National Forestry Database, December 2025 release.)
+
 ## The second handoff: Suomi NPP to NOAA-20
 
 Suomi NPP stopped delivering new data on 2 November 2026. From November 2026 the record continues on
@@ -343,7 +374,9 @@ and by about 1% in Brazil.
 - A single month in a single region can still be well off. The typical 5 degree region and year is
   about 9.5% away from what Suomi NPP observed across the three countries, and about 14.7% in Canada.
 - MODIS before 2012 is assumed to behave like MODIS after 2012. Sensor ageing is not accounted for.
-- The 2003 to 2011 estimates cannot be checked directly, because VIIRS did not exist then.
+- The 2003 to 2011 estimates cannot be checked against VIIRS, which did not exist then. Against
+  Canada's yearly area burned they would need to be about 15 to 21% higher to match (see "An outside
+  check on 2003 to 2011 in Canada").
 - Only three countries have been tested. Another country would need the same per-country test before
   the app says anything about it.
 - Suomi NPP's outages before April 2018 cannot be filled, because NOAA-20 was not flying yet.
