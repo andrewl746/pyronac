@@ -10,7 +10,7 @@ import { BASEMAP, FIRST_LABEL_LAYER } from "./basemap";
 import { formatCount, formatMonthYear } from "../../lib/format";
 import { addAnomalyLayer, ANOMALY_CLASSES, ANOMALY_LAYER, ordinal, sentenceCase, setAnomalyData } from "./anomaly";
 import AnomalyLegend from "./AnomalyLegend";
-import { addFireLayers, FIRE_LAYER_IDS, LAYER_FILL, setFireData } from "./fire";
+import { addFireLayers, FADE_MS, FIRE_FILL_LAYERS, FIRE_LAYER_IDS, setFireData } from "./fire";
 import { mapPeriod, parseYearMonth, ym } from "./labels";
 import Legend from "./Legend";
 import MonthPicker from "./MonthPicker";
@@ -132,7 +132,8 @@ export default function MapView() {
 
   // Draw the fire cells whenever new grid data arrives.
   useEffect(() => {
-    if (map) setFireData(map, grid.data, scaleMax ?? undefined);
+    // Each new answer fades in over the last one; under reduced motion it swaps at once.
+    if (map) void setFireData(map, grid.data, scaleMax ?? undefined, reducedMotion() ? 0 : FADE_MS);
   }, [map, grid.data, scaleMax]);
 
   // Draw the anomaly cells. With no box there is nothing to compare, so the layer is emptied.
@@ -197,7 +198,7 @@ export default function MapView() {
       offset: 14,
       className: "pyronac-popup",
     });
-    const move = map.on("mousemove", LAYER_FILL, (e) => {
+    const move = map.on("mousemove", FIRE_FILL_LAYERS, (e) => {
       const value: unknown = e.features?.[0]?.properties?.value;
       if (typeof value !== "number") return;
       popup
@@ -207,7 +208,7 @@ export default function MapView() {
         )
         .addTo(map);
     });
-    const leave = map.on("mouseleave", LAYER_FILL, () => popup.remove());
+    const leave = map.on("mouseleave", FIRE_FILL_LAYERS, () => popup.remove());
     const anomalyMove = map.on("mousemove", ANOMALY_LAYER, (e) => {
       const properties = e.features?.[0]?.properties;
       const value: unknown = properties?.value;

@@ -17,10 +17,19 @@ const GRADIENT: { t: number; color: [number, number, number]; opacity: number }[
   { t: 1, color: [255, 64, 48], opacity: 0.92 },
 ];
 
-const SOURCE_CELLS = "fire-cells";
-const SOURCE_OUTLINE = "fire-outline";
-export const LAYER_FILL = "fire-fill";
-export const FIRE_LAYER_IDS = [LAYER_FILL, "fire-outline"];
+// Two copies of the fire layers, A and B. A new answer goes into the hidden copy, which then fades in
+// while the shown copy fades out: a cross-fade, so the time-lapse and month changes do not jump.
+const SLOTS = ["a", "b"] as const;
+type Slot = (typeof SLOTS)[number];
+const cellsSource = (slot: Slot) => `fire-cells-${slot}`;
+const outlineSource = (slot: Slot) => `fire-outline-${slot}`;
+const fillLayer = (slot: Slot) => `fire-fill-${slot}`;
+const lineLayer = (slot: Slot) => `fire-line-${slot}`;
+export const FIRE_FILL_LAYERS = SLOTS.map(fillLayer);
+export const FIRE_LAYER_IDS = [...FIRE_FILL_LAYERS, ...SLOTS.map(lineLayer)];
+
+// How long a cross-fade takes. The time-lapse steps every 250 ms, so each month fades into the next.
+export const FADE_MS = 220;
 
 // Counts are very uneven, so intensity follows scaleValue (a log scale) from lib/colors.ts.
 // The count at a given intensity: the inverse of scaleValue, for the legend.
@@ -82,45 +91,117 @@ function cellsWithIntensity(grid: GridResponse, max: number): FeatureCollection<
 
 const EMPTY: FeatureCollection = { type: "FeatureCollection", features: [] };
 
-// Adds the two sources and the two layers, under `beforeId`.
+// Adds both copies of the cells and the outline, under `beforeId`. Copy A starts shown, B hidden.
+// Each cell's own see-through-ness lives in its colour, so the layer's opacity is free to fade.
 export function addFireLayers(map: MapLibreMap, beforeId: string): void {
-  map.addSource(SOURCE_CELLS, { type: "geojson", data: EMPTY });
-  map.addSource(SOURCE_OUTLINE, { type: "geojson", data: EMPTY });
-
-  map.addLayer(
-    {
-      id: LAYER_FILL,
-      type: "fill",
-      source: SOURCE_CELLS,
-      paint: {
-        "fill-color": gradientExpression((g) => `rgb(${g.color.join(", ")})`),
-        "fill-opacity": gradientExpression((g) => g.opacity),
-        "fill-antialias": false,
+  for (const slot of SLOTS) {
+    const opacity = slot === "a" ? 1 : 0;
+    map.addSource(cellsSource(slot), { type: "geojson", data: EMPTY });
+    map.addSource(outlineSource(slot), { type: "geojson", data: EMPTY });
+    map.addLayer(
+      {
+        id: fillLayer(slot),
+        type: "fill",
+        source: cellsSource(slot),
+        paint: {
+          "fill-color": gradientExpression((g) => `rgba(${g.color.join(", ")}, ${g.opacity})`),
+          "fill-opacity": opacity,
+          "fill-opacity-transition": { duration: FADE_MS, delay: 0 },
+          "fill-antialias": false,
+        },
       },
-    },
-    beforeId,
-  );
-  map.addLayer(
-    {
-      id: "fire-outline",
-      type: "line",
-      source: SOURCE_OUTLINE,
-      layout: { "line-cap": "square", "line-join": "miter" },
-      paint: {
-        "line-color": FIRE_RED,
-        "line-width": ["interpolate", ["linear"], ["zoom"], 1, 1.2, 5, 2, 10, 2.5],
+      beforeId,
+    );
+    map.addLayer(
+      {
+        id: lineLayer(slot),
+        type: "line",
+        source: outlineSource(slot),
+        layout: { "line-cap": "square", "line-join": "miter" },
+        paint: {
+          "line-color": FIRE_RED,
+          "line-width": ["interpolate", ["linear"], ["zoom"], 1, 1.2, 5, 2, 10, 2.5],
+          "line-opacity": opacity,
+          "line-opacity-transition": { duration: FADE_MS, delay: 0 },
+        },
       },
-    },
-    beforeId,
-  );
+      beforeId,
+    );
+  }
 }
 
+// Which copy is shown on each map, and a counter so a slow answer never fades in over a newer one.
+const fades = new WeakMap<MapLibreMap, { shown: 0 | 1; version: number; clearTimer?: number }>();
+
+function setSlotOpacity(map: MapLibreMap, slot: Slot, opacity: number, durationMs: number): void {
+  map.setPaintProperty(fillLayer(slot), "fill-opacity-transition", { duration: durationMs, delay: 0 });
+  map.setPaintProperty(fillLayer(slot), "fill-opacity", opacity);
+  map.setPaintProperty(lineLayer(slot), "line-opacity-transition", { duration: durationMs, delay: 0 });
+  map.setPaintProperty(lineLayer(slot), "line-opacity", opacity);
+}
+
+// Shows a new answer by cross-fading to it over `fadeMs` (0 swaps at once, for reduced motion).
 // `max` sets the top of the intensity scale. It defaults to the largest cell in this answer; the
 // time-lapse passes one fixed value for the whole range so months compare fairly.
-export function setFireData(map: MapLibreMap, grid: GridResponse | undefined, max?: number): void {
-  const cells = map.getSource<GeoJSONSource>(SOURCE_CELLS);
-  const outline = map.getSource<GeoJSONSource>(SOURCE_OUTLINE);
+export async function setFireData(
+  map: MapLibreMap,
+  grid: GridResponse | undefined,
+  max?: number,
+  fadeMs = FADE_MS,
+): Promise<void> {
+  let state = fades.get(map);
+  if (!state) {
+    state = { shown: 0, version: 0 };
+    fades.set(map, state);
+  }
+  const version = ++state.version;
+  window.clearTimeout(state.clearTimer);
+
+  if (fadeMs <= 0) {
+    // No fade (reduced motion): update the shown copy in place. Swapping copies without a fade could
+    // flash an empty frame before the new copy's tiles are drawn.
+    const shown = SLOTS[state.shown];
+    const hidden = SLOTS[1 - state.shown];
+    try {
+      setSlotOpacity(map, shown, 1, 0);
+      setSlotOpacity(map, hidden, 0, 0);
+      map.getSource<GeoJSONSource>(cellsSource(hidden))?.setData(EMPTY);
+      map.getSource<GeoJSONSource>(outlineSource(hidden))?.setData(EMPTY);
+      await Promise.all([
+        map.getSource<GeoJSONSource>(cellsSource(shown))?.setData(grid ? cellsWithIntensity(grid, max ?? grid.max) : EMPTY),
+        map.getSource<GeoJSONSource>(outlineSource(shown))?.setData(grid ? cellOutline(grid.cells, grid.step) : EMPTY),
+      ]);
+    } catch {
+      // the map was removed while the data loaded
+    }
+    return;
+  }
+
+  const incoming = SLOTS[1 - state.shown];
+  const outgoing = SLOTS[state.shown];
+  const cells = map.getSource<GeoJSONSource>(cellsSource(incoming));
+  const outline = map.getSource<GeoJSONSource>(outlineSource(incoming));
   if (!cells || !outline) return;
-  cells.setData(grid ? cellsWithIntensity(grid, max ?? grid.max) : EMPTY);
-  outline.setData(grid ? cellOutline(grid.cells, grid.step) : EMPTY);
+
+  // The copy we write into may still be fading out from the step before: hide it at once.
+  setSlotOpacity(map, incoming, 0, 0);
+  try {
+    await Promise.all([
+      cells.setData(grid ? cellsWithIntensity(grid, max ?? grid.max) : EMPTY),
+      outline.setData(grid ? cellOutline(grid.cells, grid.step) : EMPTY),
+    ]);
+    if (state.version !== version) return; // a newer answer arrived while this one loaded
+    setSlotOpacity(map, incoming, 1, fadeMs);
+    setSlotOpacity(map, outgoing, 0, fadeMs);
+  } catch {
+    return; // the map was removed while the data loaded
+  }
+  const shownNow = (1 - state.shown) as 0 | 1;
+  state.shown = shownNow;
+  // Once it has faded out, empty the old copy so its cells stop answering the mouse.
+  state.clearTimer = window.setTimeout(() => {
+    if (state.shown !== shownNow) return;
+    map.getSource<GeoJSONSource>(cellsSource(outgoing))?.setData(EMPTY);
+    map.getSource<GeoJSONSource>(outlineSource(outgoing))?.setData(EMPTY);
+  }, fadeMs + 50);
 }
