@@ -1,14 +1,16 @@
 import * as maplibregl from "maplibre-gl";
 import "maplibre-gl/dist/maplibre-gl.css";
 import { useCallback, useEffect, useRef, useState } from "react";
-import { useGrid } from "../../api/hooks";
+import { useAnomaly, useGrid, useMeta } from "../../api/hooks";
 import type { Bbox } from "../../api/types";
 import { snapBbox, WORLD } from "../../lib/geo";
 import { useStore } from "../../state/store";
 import { BASEMAP, FIRST_LABEL_LAYER } from "./basemap";
-import { addFireLayers, LAYER_FILL, setFireData } from "./fire";
-import { formatCount } from "../../lib/format";
-import { mapPeriod } from "./labels";
+import { formatCount, formatMonthYear } from "../../lib/format";
+import { addAnomalyLayer, ANOMALY_CLASSES, ANOMALY_LAYER, ordinal, sentenceCase, setAnomalyData } from "./anomaly";
+import AnomalyLegend from "./AnomalyLegend";
+import { addFireLayers, FIRE_LAYER_IDS, LAYER_FILL, setFireData } from "./fire";
+import { mapPeriod, parseYearMonth, ym } from "./labels";
 import Legend from "./Legend";
 import "./map.css";
 import { addSelectionLayers, setSelectedBox, useDrawBox } from "./selection";
@@ -17,6 +19,9 @@ import { addSelectionLayers, setSelectedBox, useDrawBox } from "./selection";
 const START = { center: [-100, 55] as [number, number], zoom: 1.8 };
 // With no box selected the map asks for the whole world in 1 degree cells.
 const WORLD_STEP = 10;
+
+// "fire" shows the hot spots (red hatching). "anomaly" shows how unusual one month is (extra #3).
+type View = "fire" | "anomaly";
 
 function reducedMotion(): boolean {
   return window.matchMedia("(prefers-reduced-motion: reduce)").matches;
@@ -47,6 +52,24 @@ export default function MapView() {
   const period = mapPeriod(selected, startYear, endYear);
   const grid = useGrid(bbox ?? WORLD, period.start, period.end, bbox ? undefined : WORLD_STEP);
 
+  // The anomaly view compares one month: the one picked in the calendar, otherwise the latest
+  // complete month, as the compare panel does. It needs a box, like every hook but useGrid.
+  const [view, setView] = useState<View>("fire");
+  const anomalyOn = view === "anomaly";
+  const meta = useMeta();
+  const anomalyMonth = selected ?? parseYearMonth(meta.data?.last_complete_month);
+  const anomalyLabel = anomalyMonth ? formatMonthYear(anomalyMonth.year, anomalyMonth.month) : null;
+  const anomalyPartial =
+    !!anomalyMonth &&
+    !!meta.data &&
+    meta.data.last_month !== meta.data.last_complete_month &&
+    ym(anomalyMonth.year, anomalyMonth.month) === meta.data.last_month;
+  const anomaly = useAnomaly(
+    anomalyOn && anomalyMonth ? bbox : null,
+    anomalyMonth?.year ?? 0,
+    anomalyMonth?.month ?? 0,
+  );
+
   // Create the map once.
   useEffect(() => {
     const container = containerRef.current;
@@ -64,6 +87,7 @@ export default function MapView() {
     instance.on("style.load", () => {
       instance.setProjection({ type: "globe" });
       addFireLayers(instance, FIRST_LABEL_LAYER);
+      addAnomalyLayer(instance, FIRST_LABEL_LAYER);
       addSelectionLayers(instance, FIRST_LABEL_LAYER);
       setMap(instance);
     });
@@ -84,6 +108,18 @@ export default function MapView() {
   useEffect(() => {
     if (map) setFireData(map, grid.data);
   }, [map, grid.data]);
+
+  // Draw the anomaly cells. With no box there is nothing to compare, so the layer is emptied.
+  useEffect(() => {
+    if (map) setAnomalyData(map, bbox ? anomaly.data : undefined);
+  }, [map, bbox, anomaly.data]);
+
+  // Show one view at a time.
+  useEffect(() => {
+    if (!map) return;
+    for (const id of FIRE_LAYER_IDS) map.setLayoutProperty(id, "visibility", anomalyOn ? "none" : "visible");
+    map.setLayoutProperty(ANOMALY_LAYER, "visibility", anomalyOn ? "visible" : "none");
+  }, [map, anomalyOn]);
 
   // Outline the selected box and fit the map to it. Clearing the box goes back to the globe.
   const hadBox = useRef(false);
@@ -116,7 +152,8 @@ export default function MapView() {
   const cancelDrawing = useCallback(() => setDrawing(false), []);
   useDrawBox(map, drawing, finishDrawing, cancelDrawing);
 
-  // Hovering a cell shows its exact count.
+  // Hovering a cell shows its exact numbers. Hidden layers get no mouse events, so only the
+  // current view answers.
   const periodLabel = period.label;
   useEffect(() => {
     if (!map || drawing) return;
@@ -137,12 +174,34 @@ export default function MapView() {
         .addTo(map);
     });
     const leave = map.on("mouseleave", LAYER_FILL, () => popup.remove());
+    const anomalyMove = map.on("mousemove", ANOMALY_LAYER, (e) => {
+      const properties = e.features?.[0]?.properties;
+      const value: unknown = properties?.value;
+      const median: unknown = properties?.median;
+      const percentile: unknown = properties?.percentile;
+      const cls: unknown = properties?.cls;
+      if (typeof value !== "number" || typeof median !== "number") return;
+      if (typeof percentile !== "number" || typeof cls !== "number") return;
+      popup
+        .setLngLat(e.lngLat)
+        .setHTML(
+          `<strong>${sentenceCase(ANOMALY_CLASSES[cls]?.label ?? "")}</strong><br>` +
+            `${formatCount(value)} hot spot${value === 1 ? "" : "s"} in ${anomalyLabel ?? "this month"}<br>` +
+            `<span>usually ${formatCount(median)} (median) · ${ordinal(percentile)} percentile</span>`,
+        )
+        .addTo(map);
+    });
+    const anomalyLeave = map.on("mouseleave", ANOMALY_LAYER, () => popup.remove());
     return () => {
       move.unsubscribe();
       leave.unsubscribe();
+      anomalyMove.unsubscribe();
+      anomalyLeave.unsubscribe();
       popup.remove();
     };
-  }, [map, periodLabel, drawing]);
+  }, [map, periodLabel, anomalyLabel, drawing]);
+
+  const active = anomalyOn ? anomaly : grid;
 
   function showWholeGlobe() {
     map?.flyTo({ center: START.center, zoom: START.zoom, animate: !reducedMotion(), duration: 1400 });
@@ -183,6 +242,29 @@ export default function MapView() {
             Whole globe
           </button>
         )}
+        {!drawing && (
+          <div
+            role="group"
+            aria-label="Map view"
+            className="flex overflow-hidden rounded-md border border-[var(--border)] shadow-lg"
+          >
+            {(["fire", "anomaly"] as const).map((v) => (
+              <button
+                key={v}
+                type="button"
+                aria-pressed={view === v}
+                onClick={() => setView(v)}
+                className={`border-b-2 px-3 py-1.5 text-sm transition-colors ${
+                  view === v
+                    ? "border-[var(--accent)] bg-[var(--panel-2)] font-medium text-[var(--text)]"
+                    : "border-transparent bg-[var(--panel)] text-[var(--text-dim)] hover:text-[var(--text)]"
+                }`}
+              >
+                {v === "fire" ? "Hot spots" : "Anomaly"}
+              </button>
+            ))}
+          </div>
+        )}
         {drawing && (
           <span role="status" className="rounded-md bg-[var(--panel)]/90 px-2 py-1 text-xs text-[var(--text-dim)]">
             Press, drag and release on the map. Esc cancels.
@@ -190,39 +272,56 @@ export default function MapView() {
         )}
       </div>
       <div ref={containerRef} className="pyronac-map" />
-      <div className="pointer-events-none absolute top-3 left-1/2 z-10 -translate-x-1/2">
-        {grid.isError ? (
+      {/* Below the toolbar so a long message never covers the buttons. */}
+      <div className="pointer-events-none absolute top-14 left-1/2 z-10 -translate-x-1/2">
+        {anomalyOn && !bbox ? (
+          <div role="status" className="rounded-md bg-[var(--panel)]/90 px-3 py-1.5 text-xs text-[var(--text-dim)] shadow-lg">
+            Pick an area to see how unusual {anomalyLabel ?? "the month"} was there.
+          </div>
+        ) : active.isError ? (
           <div
             role="alert"
             className="pointer-events-auto flex items-center gap-3 rounded-md border border-[var(--border)] bg-[var(--panel)] px-3 py-1.5 text-sm text-[var(--text)] shadow-lg"
           >
-            <span>Could not load hot spots: {grid.error.message}</span>
+            <span>
+              Could not load {anomalyOn ? "the anomaly map" : "hot spots"}: {active.error?.message}
+            </span>
             <button
               type="button"
-              onClick={() => void grid.refetch()}
+              onClick={() => void active.refetch()}
               className="rounded border border-[var(--border)] px-2 py-0.5 text-xs hover:bg-[var(--panel-2)]"
             >
               Try again
             </button>
           </div>
         ) : (
-          (grid.isFetching || !map) && (
+          (active.isFetching || !map) && (
             <div
               role="status"
               className="rounded-md bg-[var(--panel)]/90 px-3 py-1.5 text-xs text-[var(--text-dim)] shadow-lg"
             >
-              {map ? "Loading hot spots…" : "Loading the globe…"}
+              {!map ? "Loading the globe…" : anomalyOn ? "Loading the anomaly map…" : "Loading hot spots…"}
             </div>
           )
         )}
       </div>
-      <Legend
-        max={grid.data?.max ?? 0}
-        step={grid.data?.step ?? WORLD_STEP}
-        period={period.label}
-        loading={grid.isPending}
-        failed={grid.isError}
-      />
+      {anomalyOn ? (
+        <AnomalyLegend
+          monthLabel={anomalyLabel}
+          partial={anomalyPartial}
+          hasBox={bbox !== null}
+          loading={anomaly.isFetching}
+          failed={anomaly.isError}
+        />
+      ) : (
+        <Legend
+          max={grid.data?.max ?? 0}
+          step={grid.data?.step ?? WORLD_STEP}
+          period={period.label}
+          loading={grid.isPending}
+          failed={grid.isError}
+        />
+      )}
     </>
   );
 }
