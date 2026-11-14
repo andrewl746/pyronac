@@ -32,7 +32,7 @@ Raw ZIPs: extract into `data/raw/` and run `python pipeline/build.py` to rebuild
 | `data_through` | 2026-11-14 |
 | Served points | 42,769,559 (Brazil 26,866,806; India 8,078,063; Canada 7,824,690) |
 | Grid | 4,944,893 rows over 142,277 cells |
-| Harmonization | `ml`, validation: raw error 0.7769 → harmonized 0.1062 (median absolute percentage error of monthly totals per country, 2020–2025, learned on 2012–2019) |
+| Harmonization | `ml`, validation: raw error 0.7769 → harmonized 0.1062 (about 0.106 run to run; median absolute percentage error of monthly totals per country, 2020–2025, learned on 2012–2019) |
 | NOAA-20 handoff ratios | Brazil 1.011, Canada 0.997, India 0.987 |
 
 Yearly files come from `https://firms.modaps.eosdis.nasa.gov/data/country/<source>/<year>/<source>_<year>_<Country>.csv`
@@ -55,9 +55,14 @@ browser and were downloaded again before the build. No expected country, sensor 
 
 ## Things to know
 
-- **The full build needs PR #28.** On `main` as of this note, `build.py` runs out of disk on all three
-  countries (DuckDB spilled 227 GiB) in two joins in `ml_model.py`. PR #28 fixes both without changing any
-  value. The ML ZIP above was built with it in 67 s. Canada alone is much smaller, which is likely why this was not seen earlier.
+- **The full build needs PR #28.** On `main` (after Andrew's c390462, which fixed the neighbour sums),
+  `build.py` still runs out of disk on all three countries: the two previous/next-month self-joins in
+  `ml_model.py` blow up (DuckDB spilled 227 GiB). PR #28 replaces them with a window and changes no
+  value. With it the full build takes about 70 s. Canada alone is small enough not to hit this.
+- **Builds are not bit-for-bit reproducible.** Two runs of the same code on the same data give
+  `modis_frp_sum` values that differ by up to 6e-11 (DuckDB adds floats in parallel). That moves some
+  MODIS-era ML estimates slightly: validation is 0.1061 or 0.1062 depending on the run. The published
+  ZIP is one such run. Counts (`modis_count`, `snpp_count`, `noaa20_count`) and the snpp era are exact.
 - `points` serves only the sensor of each era: MODIS before Feb 2012, Suomi NPP to Oct 2026, NOAA-20
   from Nov 2026. Historical NOAA-20 and Suomi NPP's partial January 2012 are in `grid_counts` only.
 - Suomi NPP stops on 2026-11-02. That is why the record switches to NOAA-20 in November 2026.
