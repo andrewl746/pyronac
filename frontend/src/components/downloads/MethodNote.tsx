@@ -8,10 +8,8 @@ const METHODS: Record<Harmonization["method"], string> = {
   ml: "ml: a gradient boosting model that predicts the VIIRS count from what MODIS saw",
 };
 
-const years = (pair: [number, number]) => `${pair[0]} to ${pair[1]}`;
-
 export function MethodNote({ harmonization }: { harmonization: Harmonization }) {
-  const { method, validation, train_years, test_years, data_through, reference } = harmonization;
+  const { method, validation, data_through, reference } = harmonization;
   return (
     <div className="flex flex-col gap-1 text-xs" style={{ color: "var(--text-dim)" }}>
       <p>
@@ -20,8 +18,7 @@ export function MethodNote({ harmonization }: { harmonization: Harmonization }) 
       {validation ? (
         <p>
           <span style={{ color: "var(--text)" }}>Validation:</span> {validation.metric}: raw {validation.raw_error},
-          harmonized {validation.harmonized_error}
-          {train_years && test_years ? ` (learned on ${years(train_years)}, tested on ${years(test_years)})` : ""}.
+          harmonized {validation.harmonized_error}.
         </p>
       ) : (
         <p>
