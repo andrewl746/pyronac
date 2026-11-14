@@ -1,17 +1,29 @@
 // One bar per year for one calendar month: the baseline years, and the target year in --accent.
 // A line marks the median and a band marks the usual range, p25 to p75.
-import { Bar, BarChart, Cell, ReferenceArea, ReferenceLine, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
+// Years estimated from MODIS carry a whisker for the range of the estimate.
+import { Bar, BarChart, Cell, ErrorBar, ReferenceArea, ReferenceLine, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 import type { CompareResponse } from "../../api/types";
-import { formatCount, formatMonthYear } from "../../lib/format";
+import { formatCompact, formatCount, formatMonthYear } from "../../lib/format";
+import { estimateRange, isEstimated } from "../calendar/estimate";
+import type { Estimate } from "../calendar/estimate";
 
-type Row = { year: number; harmonized: number; isTarget: boolean };
+// spread is how far the estimate may sit below and above the bar: [minus, plus]. Only for MODIS-era years.
+type Row = { year: number; harmonized: number; isTarget: boolean; spread?: [number, number] };
 
-export function CompareChart({ data }: { data: CompareResponse }) {
+type Props = { data: CompareResponse; estimate: Estimate | null };
+
+export function CompareChart({ data, estimate }: Props) {
   const { target, baseline, history } = data;
   const rows: Row[] = [
     ...history.map((h) => ({ year: h.year, harmonized: h.harmonized, isTarget: false })),
     { year: target.year, harmonized: target.harmonized, isTarget: true },
-  ].sort((a, b) => a.year - b.year);
+  ]
+    .sort((a, b) => a.year - b.year)
+    .map((row) => {
+      if (!(row.harmonized > 0) || !isEstimated(estimate, row.year, target.month)) return row;
+      const { low, high } = estimateRange(row.harmonized, estimate.error);
+      return { ...row, spread: [row.harmonized - low, high - row.harmonized] as [number, number] };
+    });
 
   return (
     <ResponsiveContainer width="100%" height={180}>
@@ -25,7 +37,7 @@ export function CompareChart({ data }: { data: CompareResponse }) {
         <YAxis
           width={44}
           tick={{ fontSize: 10, fill: "var(--text-dim)" }}
-          tickFormatter={(value: number) => formatCount(value)}
+          tickFormatter={(value: number) => formatCompact(value)}
           tickLine={false}
           axisLine={false}
         />
@@ -38,6 +50,7 @@ export function CompareChart({ data }: { data: CompareResponse }) {
               fillOpacity={row.isTarget ? 1 : 0.55}
             />
           ))}
+          <ErrorBar dataKey="spread" width={3} strokeWidth={1.25} stroke="var(--text)" isAnimationActive={false} />
         </Bar>
         <ReferenceLine y={baseline.median} stroke="var(--text)" strokeDasharray="4 3" strokeWidth={1.25} />
         <Tooltip
@@ -56,6 +69,12 @@ export function CompareChart({ data }: { data: CompareResponse }) {
                   {row.isTarget && !target.complete ? " (partial)" : ""}
                 </div>
                 <div>{formatCount(row.harmonized)} hot spots</div>
+                {row.spread && (
+                  <div style={{ color: "var(--text-dim)" }}>
+                    Estimate, likely {formatCount(Math.round((row.harmonized - row.spread[0]) * 10) / 10)} to{" "}
+                    {formatCount(Math.round((row.harmonized + row.spread[1]) * 10) / 10)}
+                  </div>
+                )}
               </div>
             );
           }}

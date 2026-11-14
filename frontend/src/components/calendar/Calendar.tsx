@@ -6,6 +6,7 @@ import { useStore } from "../../state/store";
 import { CalendarGrid } from "./CalendarGrid";
 import { CalendarLegend } from "./CalendarLegend";
 import { CalendarTable } from "./CalendarTable";
+import { estimateFrom } from "./estimate";
 
 // The downloads panel finds the calendar SVG by this id.
 export const CALENDAR_SVG_ID = "fire-calendar-svg";
@@ -48,6 +49,7 @@ export function Calendar() {
           selected={selected}
           onSelect={setSelected}
           eraLabels={eraLabels}
+          estimate={estimateFrom(meta.data)}
           svgId={CALENDAR_SVG_ID}
         />
         <CalendarLegend max={max} ramp={ramp} />
