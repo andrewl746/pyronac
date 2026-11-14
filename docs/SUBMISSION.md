@@ -63,13 +63,14 @@ outline is at the end of this file.
   was chosen per country, and the harmonized one will have moved. On that earlier build the southern
   Amazon box showed the raw record rising while the harmonized one fell; check whether that still
   holds before saying it.
+- **See whether the fire season is moving.** Under the trend chart, one sentence and a small chart
+  of the centre of the fire season in each year, with the shift in days per decade when there is a
+  clear one.
 - **See what is unusual on the map.** An "Anomaly" view colours each cell by how unusual the selected
   month is against the same calendar month in other years.
 - **Play it as a time-lapse.** A Play button steps through the months on the map.
 - **Take the data away.** The hot spots for the area and dates download as a CSV, the calendar as a
   CSV, and the calendar and the comparison chart as PNG images.
-
-**TODO (Sam):** add the fire season shift here if pull request #35 is merged.
 
 ### How it works
 
@@ -171,7 +172,27 @@ Links:
 - Yearly country files: https://firms.modaps.eosdis.nasa.gov/data/country/
 - Archive download (2026): https://firms.modaps.eosdis.nasa.gov/download/
 
-**TODO (Yuvi):** add the data citations FIRMS asks for.
+Citations (text from Yuvi; each DOI was checked to resolve on doi.org):
+
+- We acknowledge the use of data from NASA's Fire Information for Resource Management System
+  (FIRMS) (https://earthdata.nasa.gov/firms), part of NASA's Earth Science Data and Information
+  System (ESDIS).
+- MODIS Collection 6.1 NRT Hotspot / Active Fire Detections MCD14DL, distributed from NASA FIRMS.
+  doi:10.5067/FIRMS/MODIS/MCD14DL.NRT.0061. Standard (archive) product MCD14ML,
+  doi:10.5067/FIRMS/MODIS/MCD14ML.
+- VIIRS (S-NPP) I Band 375 m Active Fire Product NRT (VNP14IMGTDL_NRT), distributed from NASA
+  FIRMS. doi:10.5067/FIRMS/VIIRS/VNP14IMGT_NRT.002. Standard (archive) product VNP14IMGTML.
+- VIIRS (NOAA-20) I Band 375 m Active Fire Product NRT (VJ114IMGTDL_NRT), distributed from NASA
+  FIRMS. doi:10.5067/FIRMS/VIIRS/VJ114IMGT_NRT.002. Standard (archive) product VJ114IMGTML.
+- Giglio, L., Descloitres, J., Justice, C. O. and Kaufman, Y. J. (2003). An enhanced contextual fire
+  detection algorithm for MODIS. Remote Sensing of Environment 87: 273–282.
+  doi:10.1016/S0034-4257(03)00184-6
+- Schroeder, W., Oliva, P., Giglio, L. and Csiszar, I. (2014). The New VIIRS 375 m active fire
+  detection data product: algorithm description and initial assessment. Remote Sensing of
+  Environment 143: 85–96. doi:10.1016/j.rse.2013.12.008
+
+The yearly country files and the 2026 archive requests mix standard and near-real-time data (see
+`docs/DATA_NOTES.md`), which is why both kinds of product are listed.
 
 ## Other references
 
