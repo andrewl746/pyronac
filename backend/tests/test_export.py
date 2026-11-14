@@ -132,3 +132,28 @@ def test_errors(client, box, path):
     assert status(end="2023-07") == 400
     assert status(west=-114.0, east=-116.0) == 400
     assert client.get(path, params=box).status_code == 422  # start and end missing
+
+
+def test_csv_text_matches_python_csv_formatting(client, box):
+    """DuckDB builds each line. It must write exactly what Python's csv module would."""
+    from datetime import date
+
+    from app import db
+
+    params = {**box, "start": "2023-01-01", "end": "2026-11-30"}
+    text = client.get("/api/points.csv", params=params).text
+    rows = db.query(
+        """
+        SELECT latitude, longitude, acq_date, acq_time, sensor, satellite, confidence, frp, daynight
+        FROM points
+        WHERE acq_date BETWEEN DATE '2023-01-01' AND DATE '2026-11-30'
+        ORDER BY acq_date, acq_time, latitude, longitude
+        """
+    )
+    buffer = io.StringIO()
+    writer = csv.writer(buffer, lineterminator="\n")
+    writer.writerow(HEADER.split(","))
+    for row in rows:
+        writer.writerow([v.isoformat() if isinstance(v, date) else v for v in row.values()])
+    assert len(rows) > 1000
+    assert text == buffer.getvalue()

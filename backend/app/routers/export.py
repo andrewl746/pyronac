@@ -2,10 +2,6 @@
 
 These are what the satellites reported, not harmonized values.
 """
-import csv
-import io
-from datetime import date
-
 from fastapi import APIRouter, Depends, HTTPException, Query
 from fastapi.responses import StreamingResponse
 
@@ -45,30 +41,32 @@ def count_points(where: str, params: list) -> int:
     return db.query(f"SELECT count(*) AS n FROM points WHERE {where}", params)[0]["n"]
 
 
+# Each CSV line is built by DuckDB, which is several times faster than formatting the
+# rows in Python. A NULL becomes an empty field, as csv.writer would write it. The values
+# never contain commas or quotes, so no quoting is needed.
+CSV_LINE_SQL = " || ',' || ".join(f"coalesce(CAST({column} AS VARCHAR), '')" for column in CSV_COLUMNS)
+
+
 def csv_lines(where: str, params: list, batch: int = 5_000):
     """Yield the CSV as text, a few thousand lines at a time."""
-    buffer = io.StringIO()
-    writer = csv.writer(buffer, lineterminator="\n")
-    writer.writerow(CSV_COLUMNS)
-    pending = 0
+    yield ",".join(CSV_COLUMNS) + "\n"
     rows = db.stream(
         f"""
-        SELECT {", ".join(CSV_COLUMNS)}
+        SELECT {CSV_LINE_SQL}
         FROM points
         WHERE {where}
         ORDER BY acq_date, acq_time, latitude, longitude
         """,
         params,
     )
-    for row in rows:
-        writer.writerow([value.isoformat() if isinstance(value, date) else value for value in row])
-        pending += 1
-        if pending >= batch:
-            yield buffer.getvalue()
-            buffer.seek(0)
-            buffer.truncate()
-            pending = 0
-    yield buffer.getvalue()
+    chunk = []
+    for (line,) in rows:
+        chunk.append(line)
+        if len(chunk) >= batch:
+            yield "\n".join(chunk) + "\n"
+            chunk = []
+    if chunk:
+        yield "\n".join(chunk) + "\n"
 
 
 @router.get("/points/count")
