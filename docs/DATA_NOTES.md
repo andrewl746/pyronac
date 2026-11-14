@@ -10,7 +10,7 @@ Checksums are in [SHA256SUMS.txt](https://github.com/andrewl746/pyronac/releases
 
 | File | What it is | Size |
 |---|---|---:|
-| **[pyronac-canada-india-brazil-processed-ml-2003-2026.zip](https://github.com/andrewl746/pyronac/releases/download/data-canada-2003-2025-20261114/pyronac-canada-india-brazil-processed-ml-2003-2026.zip)** | **Use this one.** Canada, India and Brazil, 2003 to 14 Nov 2026, built with `main`'s harmonizer (method `ml`) | 698 MB |
+| **[pyronac-canada-india-brazil-processed-ml-2003-2026.zip](https://github.com/andrewl746/pyronac/releases/download/data-canada-2003-2025-20261114/pyronac-canada-india-brazil-processed-ml-2003-2026.zip)** | **Use this one.** Canada, India and Brazil, 2003 to 14 Nov 2026, built with `main`'s harmonizer (method `ml`, same code as `main` today) | 698 MB |
 | [pyronac-canada-india-brazil-processed-2003-2026.zip](https://github.com/andrewl746/pyronac/releases/download/data-canada-2003-2025-20261114/pyronac-canada-india-brazil-processed-2003-2026.zip) | Same data, older build with the Appendix A v0 placeholder | 695 MB |
 | [pyronac-canada-2003-2025.zip](https://github.com/andrewl746/pyronac/releases/download/data-canada-2003-2025-20261114/pyronac-canada-2003-2025.zip) | First Canada-only build, through 2025, v0 | 100 MB |
 | [pyronac-canada-raw-2003-2026.zip](https://github.com/andrewl746/pyronac/releases/download/data-canada-2003-2025-20261114/pyronac-canada-raw-2003-2026.zip) | Raw FIRMS CSVs, Canada | 287 MB |
@@ -55,10 +55,9 @@ browser and were downloaded again before the build. No expected country, sensor 
 
 ## Things to know
 
-- **The full build needs PR #28.** On `main` (after Andrew's c390462, which fixed the neighbour sums),
-  `build.py` still runs out of disk on all three countries: the two previous/next-month self-joins in
-  `ml_model.py` blow up (DuckDB spilled 227 GiB). PR #28 replaces them with a window and changes no
-  value. With it the full build takes about 70 s. Canada alone is small enough not to hit this.
+- **Building all three countries needs `main` from df55dac on.** Earlier `ml_model.py` ran out of disk
+  (DuckDB spilled 227 GiB) on the previous/next-month self-joins. Found in PR #28 and fixed on `main` by
+  Andrew L. The full build now takes about 70 s, and `ml_model.load()` on the full data takes 3 s.
 - **Builds are not bit-for-bit reproducible.** Two runs of the same code on the same data give
   `modis_frp_sum` values that differ by up to 6e-11 (DuckDB adds floats in parallel). That moves some
   MODIS-era ML estimates slightly: validation is 0.1061 or 0.1062 depending on the run. The published
