@@ -6,6 +6,8 @@ import type { CalendarMonth, Era, Mode, YearMonth } from "../../api/types";
 import { rampColor, scaleValue } from "../../lib/colors";
 import { formatCount, formatMonthYear, monthShort } from "../../lib/format";
 import type { Ramp } from "../../state/store";
+import { errorPercent, estimateRange, isEstimated } from "./estimate";
+import type { Estimate } from "./estimate";
 
 const LEFT = 36; // room for the year labels
 const TOP = 18; // room for the month labels
@@ -32,13 +34,14 @@ type Props = {
   selected: YearMonth | null;
   onSelect: (selected: YearMonth | null) => void;
   eraLabels: Partial<Record<Era, string>>;
+  estimate: Estimate | null; // the error of the months estimated from MODIS, when known
   svgId?: string; // so the downloads panel can find the SVG
 };
 
 const keyOf = (year: number, month: number) => year * 100 + month;
 const cellX = (month: number) => LEFT + (month - 1) * (CELL_W + GAP);
 
-export function CalendarGrid({ months, mode, max, ramp, selected, onSelect, eraLabels, svgId }: Props) {
+export function CalendarGrid({ months, mode, max, ramp, selected, onSelect, eraLabels, estimate, svgId }: Props) {
   const cellRefs = useRef(new Map<number, SVGRectElement>());
   const [hovered, setHovered] = useState<number | null>(null);
   const [focused, setFocused] = useState<number | null>(null);
@@ -105,6 +108,10 @@ export function CalendarGrid({ months, mode, max, ramp, selected, onSelect, eraL
   const active = activeKey !== null ? byKey.get(activeKey) : undefined;
   const activeY = active ? (rowY.get(active.year) ?? 0) : 0;
   const tooltipBelow = activeY < 110;
+  const activeRange =
+    active && active.harmonized > 0 && isEstimated(estimate, active.year, active.month)
+      ? { ...estimateRange(active.harmonized, estimate.error), error: estimate.error }
+      : null;
 
   return (
     <div className="relative">
@@ -237,6 +244,12 @@ export function CalendarGrid({ months, mode, max, ramp, selected, onSelect, eraL
             {active.complete ? "" : " (partial)"}
           </div>
           <div>Harmonized: {formatCount(active.harmonized)}</div>
+          {activeRange && (
+            <div>
+              Estimate, likely {formatCount(activeRange.low)} to {formatCount(activeRange.high)} (±
+              {errorPercent(activeRange.error)})
+            </div>
+          )}
           <div>MODIS: {formatCount(active.modis)}</div>
           {active.viirs !== null && <div>VIIRS: {formatCount(active.viirs)}</div>}
           <div style={{ color: "var(--text-dim)" }}>{eraLabels[active.era] ?? ERA_SHORT[active.era]}</div>
