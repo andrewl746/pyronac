@@ -6,6 +6,9 @@ import { formatCount } from "../../lib/format";
 
 type Row = TrendResponse["years"][number];
 
+// Axis ticks only: 1,800,000 -> "1.8M", so big boxes keep their labels inside the axis width.
+const compact = new Intl.NumberFormat("en-US", { notation: "compact", maximumFractionDigits: 1 });
+
 export function TrendChart({ data }: { data: TrendResponse }) {
   const showSwitch = data.start_year <= 2011 && data.end_year >= 2012;
 
@@ -20,9 +23,9 @@ export function TrendChart({ data }: { data: TrendResponse }) {
           axisLine={{ stroke: "var(--border)" }}
         />
         <YAxis
-          width={52}
+          width={44}
           tick={{ fontSize: 10, fill: "var(--text-dim)" }}
-          tickFormatter={(value: number) => formatCount(value)}
+          tickFormatter={(value: number) => compact.format(value)}
           tickLine={false}
           axisLine={false}
         />
