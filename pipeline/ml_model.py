@@ -104,15 +104,22 @@ def load(con, data_dir, keep_grid_counts=False):
         """
         CREATE OR REPLACE TABLE feat AS
         WITH near AS (
+            -- Each MODIS cell is copied to the 25 cells of the 5 by 5 window around it, then joined on
+            -- equality. A range join here pairs every cell with every cell of the same month, which
+            -- runs out of disk on all three countries.
             SELECT
                 a.cell_x, a.cell_y, a.year, a.month,
-                sum(b.modis_count) FILTER (WHERE abs(b.cell_x - a.cell_x) <= 1 AND abs(b.cell_y - a.cell_y) <= 1)
-                    - any_value(a.modis_count) AS near_8,
+                sum(b.modis_count) FILTER (WHERE b.inner_ring) - any_value(a.modis_count) AS near_8,
                 sum(b.modis_count) - any_value(a.modis_count) AS near_24
             FROM g a
-            JOIN g b ON b.year = a.year AND b.month = a.month
-                    AND b.cell_x BETWEEN a.cell_x - 2 AND a.cell_x + 2
-                    AND b.cell_y BETWEEN a.cell_y - 2 AND a.cell_y + 2
+            JOIN (
+                SELECT s.cell_x + o.dx AS cell_x, s.cell_y + o.dy AS cell_y, s.year, s.month, s.modis_count,
+                       abs(o.dx) <= 1 AND abs(o.dy) <= 1 AS inner_ring
+                FROM g s
+                CROSS JOIN (SELECT CAST(dx.range AS INTEGER) AS dx, CAST(dy.range AS INTEGER) AS dy
+                            FROM range(-2, 3) dx, range(-2, 3) dy) o
+                WHERE s.modis_count > 0
+            ) b USING (cell_x, cell_y, year, month)
             WHERE a.modis_count > 0
             GROUP BY 1, 2, 3, 4
         ),
