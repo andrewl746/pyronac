@@ -1,0 +1,34 @@
+// Number and month formatting. Always en-US and UTC so every panel reads the same.
+
+const MONTH_NAMES = [
+  "January", "February", "March", "April", "May", "June",
+  "July", "August", "September", "October", "November", "December",
+];
+
+const countFormat = new Intl.NumberFormat("en-US", { maximumFractionDigits: 1 });
+
+// 1042 -> "1,042", 55.3 -> "55.3", 61.0 -> "61"
+export function formatCount(value: number): string {
+  return countFormat.format(value);
+}
+
+// month is 1 to 12. 7 -> "July"
+export function monthName(month: number): string {
+  return MONTH_NAMES[month - 1] ?? "";
+}
+
+// 7 -> "Jul"
+export function monthShort(month: number): string {
+  return monthName(month).slice(0, 3);
+}
+
+// (2023, 7) -> "July 2023"
+export function formatMonthYear(year: number, month: number): string {
+  return `${monthName(month)} ${year}`;
+}
+
+// "2026-11-06" -> "6 Nov 2026"
+export function formatDate(isoDate: string): string {
+  const [year, month, day] = isoDate.split("-").map(Number);
+  return `${day} ${monthShort(month)} ${year}`;
+}
