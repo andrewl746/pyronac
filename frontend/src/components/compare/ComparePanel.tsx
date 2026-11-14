@@ -1,12 +1,19 @@
-// Compares one month with the same calendar month in the other years. Feature F4.
-import { useCompare, useMeta } from "../../api/hooks";
+// Compares the years with each other, as a compact bar chart over the From-To year range. Feature F4.
+// It follows the map's Month/Year picker (the selected month):
+// - a month picked: one bar per year for that calendar month, from /api/compare, with the picked
+//   year highlighted, the median and the usual range;
+// - "Whole period": one bar per year for the year's total, from the calendar's data, with the
+//   busiest year highlighted. These follow the Harmonized or Raw switch, like the calendar.
+import { useCalendar, useCompare, useMeta } from "../../api/hooks";
+import type { CalendarMonth } from "../../api/types";
 import { formatCount, formatMonthYear, monthName } from "../../lib/format";
 import { useStore } from "../../state/store";
-import { errorPercent, estimateFrom, estimateRange, isEstimated } from "../calendar/estimate";
-import { CompareChart } from "./CompareChart";
-import { headline, ordinal, partialNote } from "./sentences";
+import { estimateFrom, estimateRange, isEstimated } from "../calendar/estimate";
+import { CompareChart, type CompareRow } from "./CompareChart";
+import { headline, partialNote } from "./sentences";
 
-// The downloads panel finds the chart's SVG inside the element with this id.
+// The downloads panel finds the chart's SVG inside the element with this id, and its caption in
+// the element's data-caption.
 export const COMPARE_CHART_ID = "compare-chart";
 
 function Key({ swatch, children }: { swatch: React.CSSProperties; children: React.ReactNode }) {
@@ -18,77 +25,109 @@ function Key({ swatch, children }: { swatch: React.CSSProperties; children: Reac
   );
 }
 
+function median(values: number[]): number | null {
+  if (values.length === 0) return null;
+  const sorted = [...values].sort((a, b) => a - b);
+  const middle = Math.floor(sorted.length / 2);
+  return sorted.length % 2 ? sorted[middle] : (sorted[middle - 1] + sorted[middle]) / 2;
+}
+
+// One row per year with the year's total. A year with a month still to come is partial.
+function yearlyRows(months: CalendarMonth[], raw: boolean): CompareRow[] {
+  const byYear = new Map<number, { value: number; months: number; complete: boolean }>();
+  for (const m of months) {
+    const year = byYear.get(m.year) ?? { value: 0, months: 0, complete: true };
+    year.value += raw ? m.raw : m.harmonized;
+    year.months += 1;
+    year.complete &&= m.complete;
+    byYear.set(m.year, year);
+  }
+  const rows = [...byYear.entries()].map(([year, y]) => ({
+    year,
+    value: Math.round(y.value * 10) / 10,
+    highlight: false,
+    partial: y.months < 12 || !y.complete,
+  }));
+  const busiest = rows.filter((r) => !r.partial).reduce<CompareRow | null>((a, r) => (!a || r.value > a.value ? r : a), null);
+  return rows.map((r) => (r === busiest ? { ...r, highlight: true } : r));
+}
+
 export function ComparePanel() {
   const bbox = useStore((state) => state.bbox);
   const selected = useStore((state) => state.selected);
-  // With nothing selected, leave year and month out and the API uses the latest complete month.
-  const compare = useCompare(bbox, selected?.year, selected?.month);
+  const startYear = useStore((state) => state.startYear);
+  const endYear = useStore((state) => state.endYear);
+  const mode = useStore((state) => state.mode);
   const estimate = estimateFrom(useMeta().data);
+  // A month picked: that month in every year of the range. Otherwise the yearly totals, from the
+  // same query as the calendar, so no extra request.
+  const compare = useCompare(selected ? bbox : null, selected?.year, selected?.month, startYear, endYear);
+  const calendar = useCalendar(bbox, startYear, endYear);
 
   let body;
   if (!bbox) {
-    body = <p style={{ color: "var(--text-dim)" }}>Pick an area on the map to compare a month with its history.</p>;
-  } else if (compare.isError) {
-    body = <p role="alert">Could not load the comparison: {compare.error.message}</p>;
-  } else if (!compare.data) {
-    body = <p style={{ color: "var(--text-dim)" }}>Loading the comparison…</p>;
+    body = <p style={{ color: "var(--text-dim)" }}>Pick an area on the map to compare the years.</p>;
+  } else if (selected) {
+    if (compare.isError) {
+      body = <p role="alert">Could not load the comparison: {compare.error.message}</p>;
+    } else if (!compare.data) {
+      body = <p style={{ color: "var(--text-dim)" }}>Loading the comparison…</p>;
+    } else {
+      const data = compare.data;
+      const { target, baseline } = data;
+      const month = monthName(target.month);
+      const when = formatMonthYear(target.year, target.month);
+      const partial = partialNote(data);
+      const sentence = headline(data);
+      const rows: CompareRow[] = [
+        ...data.history.map((h) => ({ year: h.year, value: h.harmonized, highlight: false })),
+        { year: target.year, value: target.harmonized, highlight: true, partial: !target.complete },
+      ]
+        .sort((a, b) => a.year - b.year)
+        .map((row) => {
+          if (!(row.value > 0) || !isEstimated(estimate, row.year, target.month)) return row;
+          const { low, high } = estimateRange(row.value, estimate.error);
+          return { ...row, spread: [row.value - low, high - row.value] as [number, number] };
+        });
+      body = (
+        <Chart
+          sentence={partial ? `${partial} ${sentence}` : sentence}
+          caption={`${when} against the same month in other years`}
+          label={`Bar chart of ${month} hot spots by year, ${baseline.start_year} to ${baseline.end_year}. ${sentence}`}
+          rows={rows}
+          median={baseline.median}
+          band={[baseline.p25, baseline.p75]}
+          rowLabel={(row) => formatMonthYear(row.year, target.month)}
+          highlightLabel={when}
+          others={`other ${month}s`}
+        />
+      );
+    }
+  } else if (calendar.isError) {
+    body = <p role="alert">Could not load the yearly totals: {calendar.error.message}</p>;
+  } else if (!calendar.data) {
+    body = <p style={{ color: "var(--text-dim)" }}>Loading the yearly totals…</p>;
   } else {
-    const data = compare.data;
-    const { target, baseline, difference } = data;
-    const month = monthName(target.month);
-    const partial = partialNote(data);
-    const sentence = headline(data);
-    const targetRange =
-      target.harmonized > 0 && isEstimated(estimate, target.year, target.month)
-        ? estimateRange(target.harmonized, estimate.error)
-        : null;
+    const raw = mode === "raw";
+    const rows = yearlyRows(calendar.data.months, raw);
+    const busiest = rows.find((r) => r.highlight);
+    const first = rows[0]?.year;
+    const last = rows[rows.length - 1]?.year;
+    const counts = raw ? "raw counts, as the satellites reported them" : "harmonized counts";
+    const sentence = busiest
+      ? `Busiest year: ${busiest.year}, with ${formatCount(busiest.value)} hot spots (${counts}).`
+      : `No full year in ${first} to ${last} yet.`;
     body = (
-      <div className="flex flex-col gap-2">
-        <div aria-live="polite">
-          {partial && (
-            <p className="font-semibold" style={{ color: "var(--accent)" }}>
-              {partial}
-            </p>
-          )}
-          <p className="text-base font-semibold">{sentence}</p>
-          <p style={{ color: "var(--text-dim)" }}>
-            {baseline.max === 0 && target.harmonized === 0 ? (
-              <>No hot spots in any {month} on record here.</>
-            ) : (
-              <>
-                {formatCount(target.harmonized)} hot spots against a median of {formatCount(baseline.median)}. Usual
-                range {formatCount(baseline.p25)} to {formatCount(baseline.p75)}.{" "}
-                {difference.rank === 1 ? "Highest" : `${ordinal(difference.rank)} highest`} of {difference.of} {month}s:{" "}
-                <span style={{ color: "var(--text)" }}>{difference.label}</span>.
-              </>
-            )}
-          </p>
-          {targetRange && (
-            <p style={{ color: "var(--text-dim)" }}>
-              {formatMonthYear(target.year, target.month)} is an estimate from MODIS: likely{" "}
-              {formatCount(targetRange.low)} to {formatCount(targetRange.high)} hot spots.
-            </p>
-          )}
-        </div>
-        <div
-          id={COMPARE_CHART_ID}
-          role="img"
-          aria-label={`Bar chart of ${month} hot spots by year, ${baseline.start_year} to ${baseline.end_year}. ${sentence}`}
-        >
-          <CompareChart data={data} estimate={estimate} />
-        </div>
-        <p className="flex flex-wrap gap-x-3 gap-y-1 text-xs" style={{ color: "var(--text-dim)" }}>
-          <Key swatch={{ background: "var(--accent)" }}>{formatMonthYear(target.year, target.month)}</Key>
-          <Key swatch={{ background: "var(--text-dim)", opacity: 0.55 }}>other years</Key>
-          <Key swatch={{ height: 0, borderTop: "2px dashed var(--text)" }}>median</Key>
-          <Key swatch={{ background: "var(--focus)", opacity: 0.3 }}>usual range (middle half of years)</Key>
-          {estimate && data.history.some((h) => h.harmonized > 0 && isEstimated(estimate, h.year, target.month)) && (
-            <Key swatch={{ width: 0, height: 10, borderLeft: "2px solid var(--text)" }}>
-              range of the estimate before February 2012 (±{errorPercent(estimate.error)})
-            </Key>
-          )}
-        </p>
-      </div>
+      <Chart
+        sentence={sentence}
+        caption={`Yearly hot spots, ${first} to ${last}, ${counts}`}
+        label={`Bar chart of yearly hot spots, ${first} to ${last}. ${sentence}`}
+        rows={rows}
+        median={median(rows.filter((r) => !r.partial).map((r) => r.value))}
+        rowLabel={(row) => String(row.year)}
+        highlightLabel={busiest ? `${busiest.year}, the busiest year` : "busiest year"}
+        others="other years"
+      />
     );
   }
 
@@ -99,5 +138,36 @@ export function ComparePanel() {
       </h2>
       {body}
     </section>
+  );
+}
+
+type ChartProps = {
+  sentence: string; // the text alternative to the chart
+  caption: string; // for the PNG download
+  label: string;
+  rows: CompareRow[];
+  median: number | null;
+  band?: [number, number];
+  rowLabel: (row: CompareRow) => string;
+  highlightLabel: string;
+  others: string;
+};
+
+function Chart({ sentence, caption, label, rows, median, band, rowLabel, highlightLabel, others }: ChartProps) {
+  return (
+    <div className="flex flex-col gap-1.5">
+      <p className="font-semibold" aria-live="polite">
+        {sentence}
+      </p>
+      <div id={COMPARE_CHART_ID} data-caption={caption} role="img" aria-label={label}>
+        <CompareChart rows={rows} median={median} band={band} rowLabel={rowLabel} />
+      </div>
+      <p className="flex flex-wrap gap-x-3 gap-y-1 text-xs" style={{ color: "var(--text-dim)" }}>
+        <Key swatch={{ background: "var(--accent)" }}>{highlightLabel}</Key>
+        <Key swatch={{ background: "var(--text-dim)", opacity: 0.55 }}>{others}</Key>
+        {median !== null && <Key swatch={{ height: 0, borderTop: "2px dashed var(--text)" }}>median</Key>}
+        {band && <Key swatch={{ background: "var(--focus)", opacity: 0.3 }}>usual range</Key>}
+      </p>
+    </div>
   );
 }

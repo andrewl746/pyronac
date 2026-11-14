@@ -149,7 +149,8 @@ export function Downloads() {
               savePng(
                 document.getElementById(COMPARE_CHART_ID)?.querySelector("svg"),
                 "fire_comparison.png",
-                `Pyronac: ${comparedMonth} against the same month in other years. ${boxText(bbox)}`,
+                // The chart says what it shows: one month across the years, or the yearly totals.
+                `Pyronac: ${document.getElementById(COMPARE_CHART_ID)?.dataset.caption ?? `${comparedMonth} against the same month in other years`}. ${boxText(bbox)}`,
                 "The comparison chart is not on screen yet.",
               )
             }

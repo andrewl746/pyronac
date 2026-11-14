@@ -1,7 +1,7 @@
 // A small either/or switch made of buttons. Used by the mode switch and the ramp switch.
 import type { ReactNode } from "react";
 
-type Option<T extends string> = { value: T; label: ReactNode };
+type Option<T extends string> = { value: T; label: ReactNode; title?: string }; // title: hover text
 
 type Props<T extends string> = {
   label: string; // read by screen readers, for example "Counts"
@@ -27,6 +27,7 @@ export function Segmented<T extends string>({ label, describedBy, options, value
             key={option.value}
             type="button"
             aria-pressed={on}
+            title={option.title}
             onClick={() => onChange(option.value)}
             className="segmented-option flex cursor-pointer items-center gap-1.5 px-2.5 py-1 text-xs"
             style={{
