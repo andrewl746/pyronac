@@ -13,7 +13,7 @@ export default function AnomalyLegend({ monthLabel, partial, hasBox, loading, fa
   const month = monthLabel?.split(" ")[0] ?? "month";
   return (
     <div
-      className="pointer-events-auto absolute bottom-3 left-3 z-10 w-64 rounded-md border border-[var(--border)] bg-[var(--panel)]/90 p-3 text-xs shadow-lg backdrop-blur"
+      className="pointer-events-auto absolute bottom-3 left-3 z-10 w-72 rounded-md border border-[var(--border)] bg-[var(--panel)]/90 p-3 text-xs shadow-lg backdrop-blur"
       aria-label="Anomaly legend"
       role="group"
     >
@@ -21,15 +21,22 @@ export default function AnomalyLegend({ monthLabel, partial, hasBox, loading, fa
       <div className="mb-2 text-[var(--text-dim)]">
         Each cell against every other {month} since 2003{partial ? ". This month is not complete yet." : "."}
       </div>
+      <div className="mb-1 flex justify-end text-[var(--text-dim)]" aria-hidden="true">
+        percentile
+      </div>
       <ul className="flex flex-col gap-1">
         {[...ANOMALY_CLASSES].reverse().map((c) => (
           <li key={c.label} className="flex items-center gap-2 text-[var(--text)]">
             <span
               aria-hidden="true"
-              className="block h-3 w-5 rounded-sm border border-black/40"
+              className="block h-3 w-5 shrink-0 rounded-sm border border-black/40"
               style={{ backgroundColor: c.color, opacity: c.opacity }}
             />
-            {sentenceCase(c.label)}
+            <span className="flex-1">{sentenceCase(c.label)}</span>
+            <span className="tabular-nums text-[var(--text-dim)]">
+              {c.range}
+              <span className="sr-only"> percentile</span>
+            </span>
           </li>
         ))}
       </ul>
