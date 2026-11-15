@@ -6,7 +6,6 @@ import type { FeatureCollection, Polygon } from "geojson";
 import type { ExpressionSpecification, GeoJSONSource, Map as MapLibreMap } from "maplibre-gl";
 import type { AnomalyResponse, CompareLabel } from "../../api/types";
 import { cellsToGeoJSON } from "../../lib/geo";
-import { cellCentres, cellRadius, setGlowStep } from "./glow";
 
 // `range` is the percentile range anomalyClass puts in each class, for the legend (section 8:
 // every coloured thing has a legend with numbers on it).
@@ -19,10 +18,8 @@ export const ANOMALY_CLASSES: { label: CompareLabel; range: string; color: strin
 ];
 
 const SOURCE = "anomaly-cells";
-const SOURCE_POINTS = "anomaly-points";
-export const ANOMALY_LAYER = "anomaly-fill"; // invisible squares, for hover only
-const ANOMALY_GLOW = "anomaly-glow";
-export const ANOMALY_LAYER_IDS = [ANOMALY_GLOW, ANOMALY_LAYER];
+export const ANOMALY_LAYER = "anomaly-fill"; // one square per cell, which also answers hover
+export const ANOMALY_LAYER_IDS = [ANOMALY_LAYER];
 
 // The class index for a percentile: the same rule as `label` in /api/compare (section 7).
 export function anomalyClass(percentile: number): number {
@@ -51,9 +48,8 @@ function anomalyFeatures(data: AnomalyResponse): FeatureCollection<Polygon, Anom
 
 const EMPTY: FeatureCollection = { type: "FeatureCollection", features: [] };
 
-// How far each cell's glow reaches, in cell heights. With circle-blur 1 the glow fades from the
-// centre, so neighbours overlap into one soft field.
-export const GLOW_SPREAD = 1.25;
+// A faint dark edge so neighbouring cells of the same colour still read as cells.
+export const CELL_EDGE = "rgba(0, 0, 0, 0.3)";
 
 // ["match", ["get", "cls"], 0, ..., 4, ..., fallback]: one value per class, falling back to "near normal".
 function byClass(pick: (c: (typeof ANOMALY_CLASSES)[number]) => string | number): ExpressionSpecification {
@@ -61,35 +57,22 @@ function byClass(pick: (c: (typeof ANOMALY_CLASSES)[number]) => string | number)
   return ["match", ["get", "cls"], 0, a, 1, b, 2, c, 3, d, 4, e, c];
 }
 
-// Adds the sources and the (hidden) layers, under `beforeId`. Each cell is a soft round glow in its
-// class colour; invisible squares on top answer hover.
+// Adds the source and the (hidden) layer, under `beforeId`. Each cell is a square in its class
+// colour. The classes are categories, so a cell is not blurred into its neighbours: a blend of
+// two classes would be a colour the legend does not have.
 export function addAnomalyLayer(map: MapLibreMap, beforeId: string): void {
   map.addSource(SOURCE, { type: "geojson", data: EMPTY });
-  map.addSource(SOURCE_POINTS, { type: "geojson", data: EMPTY });
-  map.addLayer(
-    {
-      id: ANOMALY_GLOW,
-      type: "circle",
-      source: SOURCE_POINTS,
-      layout: { visibility: "none" },
-      paint: {
-        "circle-color": byClass((c) => c.color),
-        "circle-opacity": byClass((c) => c.opacity),
-        "circle-radius": cellRadius(10, GLOW_SPREAD),
-        "circle-blur": 0.8,
-        "circle-pitch-alignment": "map",
-        "circle-pitch-scale": "map",
-      },
-    },
-    beforeId,
-  );
   map.addLayer(
     {
       id: ANOMALY_LAYER,
       type: "fill",
       source: SOURCE,
       layout: { visibility: "none" },
-      paint: { "fill-color": "#000", "fill-opacity": 0 },
+      paint: {
+        "fill-color": byClass((c) => c.color),
+        "fill-opacity": byClass((c) => c.opacity),
+        "fill-outline-color": CELL_EDGE,
+      },
     },
     beforeId,
   );
@@ -97,10 +80,6 @@ export function addAnomalyLayer(map: MapLibreMap, beforeId: string): void {
 
 export function setAnomalyData(map: MapLibreMap, data: AnomalyResponse | undefined): void {
   map.getSource<GeoJSONSource>(SOURCE)?.setData(data ? anomalyFeatures(data) : EMPTY);
-  map
-    .getSource<GeoJSONSource>(SOURCE_POINTS)
-    ?.setData(data ? cellCentres(data.cells, data.step, (i) => ({ cls: anomalyClass(data.cells[i][4]) })) : EMPTY);
-  if (data) setGlowStep(map, ANOMALY_GLOW, data.step, GLOW_SPREAD);
 }
 
 // "above normal" -> "Above normal"

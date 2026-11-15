@@ -12,8 +12,7 @@ import type { GridResponse } from "../../api/types";
 import { cellsToGeoJSON, WORLD, WORLD_STEP } from "../../lib/geo";
 import { useStore } from "../../state/store";
 import { lastFullYear, trendYears } from "../trend/sentences";
-import { GLOW_SPREAD } from "./anomaly";
-import { cellCentres, cellRadius, setGlowStep } from "./glow";
+import { CELL_EDGE } from "./anomaly";
 import { parseYearMonth } from "./labels";
 import { cellTrends, trendBreaks, trendClass, type CellTrend } from "./trendMath";
 
@@ -24,11 +23,9 @@ export { signedCount } from "./trendMath";
 export const TREND_COLORS = ["#2f86ff", "#7cb8ff", "#9aa4b1", "#ffa23a", "#ff4d12"];
 // Flat cells stay faint so the real changes stand out on the night globe.
 export const TREND_OPACITY = [1, 0.7, 0.14, 0.8, 1];
-export const TREND_LAYER = "trend-fill"; // invisible squares, for hover only
-const TREND_GLOW = "trend-glow";
-export const TREND_LAYER_IDS = [TREND_GLOW, TREND_LAYER];
+export const TREND_LAYER = "trend-fill"; // one square per cell, which also answers hover
+export const TREND_LAYER_IDS = [TREND_LAYER];
 const SOURCE = "trend-cells";
-const SOURCE_POINTS = "trend-points";
 
 // The full years of the year range: January to December both within the data.
 function fullYearsOf(firstMonth: string, lastFull: number, startYear: number, endYear: number): number[] {
@@ -112,35 +109,21 @@ function byClass<T extends string | number>(values: T[]): ExpressionSpecificatio
 
 const EMPTY: FeatureCollection = { type: "FeatureCollection", features: [] };
 
-// Adds the sources and the (hidden) layers, under `beforeId`. Each cell is a soft round glow;
-// invisible squares on top answer hover.
+// Adds the source and the (hidden) layer, under `beforeId`. Each cell is a square in its class
+// colour, not blurred into its neighbours, as in the anomaly view.
 export function addTrendLayer(map: MapLibreMap, beforeId: string): void {
   map.addSource(SOURCE, { type: "geojson", data: EMPTY });
-  map.addSource(SOURCE_POINTS, { type: "geojson", data: EMPTY });
-  map.addLayer(
-    {
-      id: TREND_GLOW,
-      type: "circle",
-      source: SOURCE_POINTS,
-      layout: { visibility: "none" },
-      paint: {
-        "circle-color": byClass(TREND_COLORS),
-        "circle-opacity": byClass(TREND_OPACITY),
-        "circle-radius": cellRadius(10, GLOW_SPREAD),
-        "circle-blur": 0.8,
-        "circle-pitch-alignment": "map",
-        "circle-pitch-scale": "map",
-      },
-    },
-    beforeId,
-  );
   map.addLayer(
     {
       id: TREND_LAYER,
       type: "fill",
       source: SOURCE,
       layout: { visibility: "none" },
-      paint: { "fill-color": "#000", "fill-opacity": 0 },
+      paint: {
+        "fill-color": byClass(TREND_COLORS),
+        "fill-opacity": byClass(TREND_OPACITY),
+        "fill-outline-color": CELL_EDGE,
+      },
     },
     beforeId,
   );
@@ -153,21 +136,11 @@ export function setTrendData(
   breaks: number[],
 ): void {
   const source = map.getSource<GeoJSONSource>(SOURCE);
-  const points = map.getSource<GeoJSONSource>(SOURCE_POINTS);
-  if (!source || !points) return;
+  if (!source) return;
   if (!trends || step === undefined) {
     source.setData(EMPTY);
-    points.setData(EMPTY);
     return;
   }
-  points.setData(
-    cellCentres(
-      trends.map((t) => [t.x, t.y]),
-      step,
-      (i) => ({ cls: trendClass(trends[i].slope, breaks) }),
-    ),
-  );
-  setGlowStep(map, TREND_GLOW, step, GLOW_SPREAD);
   const squares = cellsToGeoJSON(
     trends.map((t) => [t.x, t.y, t.slope]),
     step,
