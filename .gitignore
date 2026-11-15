@@ -24,3 +24,7 @@ dist/
 .idea/
 .DS_Store
 Thumbs.db
+
+# Deploy staging folder, made by deploy/publish.py
+deploy/build/
+deploy/data-zip/
