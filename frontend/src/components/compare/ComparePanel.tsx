@@ -19,7 +19,7 @@ export const COMPARE_CHART_ID = "compare-chart";
 function Key({ swatch, children }: { swatch: React.CSSProperties; children: React.ReactNode }) {
   return (
     <span className="inline-flex items-center gap-1.5">
-      <span aria-hidden="true" className="inline-block h-2.5 w-4" style={swatch} />
+      <span aria-hidden="true" className="inline-block h-2 w-3" style={swatch} />
       {children}
     </span>
   );
@@ -132,8 +132,8 @@ export function ComparePanel() {
   }
 
   return (
-    <section aria-labelledby="compare-heading" className="flex flex-col gap-2 text-sm">
-      <h2 id="compare-heading" className="text-sm font-semibold">
+    <section aria-labelledby="compare-heading" className="flex flex-col gap-3 text-[13px]">
+      <h2 id="compare-heading" className="label">
         Compared with other years
       </h2>
       {body}
@@ -155,18 +155,18 @@ type ChartProps = {
 
 function Chart({ sentence, caption, label, rows, median, band, rowLabel, highlightLabel, others }: ChartProps) {
   return (
-    <div className="flex flex-col gap-1.5">
-      <p className="font-semibold" aria-live="polite">
+    <div className="flex flex-col gap-2">
+      <p className="text-[15px] leading-snug text-[var(--text)]" aria-live="polite">
         {sentence}
       </p>
       <div id={COMPARE_CHART_ID} data-caption={caption} role="img" aria-label={label}>
         <CompareChart rows={rows} median={median} band={band} rowLabel={rowLabel} />
       </div>
-      <p className="flex flex-wrap gap-x-3 gap-y-1 text-xs" style={{ color: "var(--text-dim)" }}>
+      <p className="flex flex-wrap gap-x-4 gap-y-1 text-[11px]" style={{ color: "var(--text-dim)" }}>
         <Key swatch={{ background: "var(--accent)" }}>{highlightLabel}</Key>
-        <Key swatch={{ background: "var(--text-dim)", opacity: 0.55 }}>{others}</Key>
-        {median !== null && <Key swatch={{ height: 0, borderTop: "2px dashed var(--text)" }}>median</Key>}
-        {band && <Key swatch={{ background: "var(--focus)", opacity: 0.3 }}>usual range</Key>}
+        <Key swatch={{ background: "var(--text-dim)", opacity: 0.4 }}>{others}</Key>
+        {median !== null && <Key swatch={{ height: 0, borderTop: "1px dashed var(--text)" }}>median</Key>}
+        {band && <Key swatch={{ background: "var(--text)", opacity: 0.12 }}>usual range</Key>}
       </p>
     </div>
   );

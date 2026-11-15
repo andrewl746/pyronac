@@ -3,7 +3,8 @@
 import { useMemo, useRef, useState } from "react";
 import type { KeyboardEvent } from "react";
 import type { CalendarMonth, Era, Mode, YearMonth } from "../../api/types";
-import { rampColor, scaleValue } from "../../lib/colors";
+import { scaleValue } from "../../lib/colors";
+import { fireColor, fireOpacity } from "../map/fire";
 import { formatCount, formatMonthYear, monthShort } from "../../lib/format";
 import type { Ramp } from "../../state/store";
 import { errorPercent, estimateRange, isEstimated } from "./estimate";
@@ -177,7 +178,9 @@ export function CalendarGrid({ months, mode, max, ramp, selected, onSelect, eraL
                     data-year={m.year}
                     data-month={m.month}
                     style={{
-                      fill: value > 0 ? rampColor(scaleValue(value, max), ramp) : "var(--zero-cell)",
+                      fill: value > 0 ? fireColor(scaleValue(value, max), ramp) : "var(--zero-cell)",
+                      // The same light-and-fade as the map: few hot spots faint, many bright.
+                      fillOpacity: value > 0 ? fireOpacity(scaleValue(value, max)) : 1,
                       stroke: isSelected ? "var(--accent)" : m.complete ? "none" : "var(--text-dim)",
                       strokeWidth: isSelected ? 2 : 1,
                       strokeDasharray: !m.complete && !isSelected ? "3 2" : undefined,

@@ -10,8 +10,8 @@ function Swatch({ ramp }: { ramp: Ramp }) {
   return (
     <span
       aria-hidden="true"
-      className="inline-block h-2.5 w-6 rounded-sm"
-      style={{ background: `linear-gradient(to right, ${rampStops(ramp, 5).join(", ")})`, outline: "1px solid var(--border)" }}
+      className="inline-block h-1.5 w-5"
+      style={{ background: `linear-gradient(to right, ${rampStops(ramp, 5).join(", ")})` }}
     />
   );
 }

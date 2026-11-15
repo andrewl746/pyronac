@@ -6,7 +6,7 @@ import { parseYearMonth, ym } from "./labels";
 
 const MONTHS = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12];
 const SELECT_CLASS =
-  "rounded-md border border-[var(--border)] bg-[var(--panel-2)] px-1.5 py-1 text-xs text-[var(--text)] disabled:opacity-50";
+  "field";
 
 // Which month the map shows: the whole year range, or one month. It sets `selected` in the store,
 // like a click in the calendar, so the calendar, the compare panel and the time-lapse follow.
@@ -40,8 +40,8 @@ export default function MonthPicker() {
   };
 
   return (
-    <div className="mb-2 flex items-center gap-1.5">
-      <span className="text-[var(--text-dim)]">Showing</span>
+    <div className="mb-2 flex items-center gap-1.5 text-[11px]">
+      <span className="mr-0.5 text-[var(--text-dim)]">Showing</span>
       <label>
         <span className="sr-only">Month shown on the map</span>
         <select

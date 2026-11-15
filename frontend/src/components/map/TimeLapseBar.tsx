@@ -8,7 +8,7 @@ type Props = {
   enabled: boolean; // false in the anomaly view
 };
 
-const ERA_TINTS = ["rgba(255, 255, 255, 0.06)", "rgba(124, 196, 255, 0.14)", "rgba(255, 138, 61, 0.16)"];
+const ERA_TINTS = ["transparent", "transparent", "transparent"];
 const SHORT_MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
 
 // "2012-02" -> "Feb 2012"
@@ -42,7 +42,7 @@ export default function TimeLapseBar({ timeLapse, enabled }: Props) {
     <div
       role="group"
       aria-label="Time-lapse"
-      className="pointer-events-auto absolute right-14 bottom-3 left-[19.5rem] z-10 rounded-md border border-[var(--border)] bg-[var(--panel)]/90 px-3 py-2 text-xs shadow-lg backdrop-blur"
+      className="map-panel absolute bottom-8 left-1/2 z-10 w-[min(520px,calc(100%-560px))] min-w-[360px] -translate-x-1/2 rounded-full py-1.5 pr-5 pl-1.5 text-xs"
     >
       <div className="flex items-center gap-3">
         <button
@@ -50,35 +50,41 @@ export default function TimeLapseBar({ timeLapse, enabled }: Props) {
           onClick={busy ? pause : () => void play()}
           disabled={!busy && (!enabled || n === 0)}
           title={enabled ? undefined : "Switch to Hot spots to play the time-lapse"}
-          className={`flex shrink-0 items-center gap-1.5 rounded-md border px-3 py-1.5 text-sm font-medium transition-colors disabled:opacity-50 ${
-            busy
-              ? "border-[var(--accent)] bg-[var(--accent)] text-black"
-              : "border-[var(--border)] bg-[var(--panel-2)] text-[var(--text)] hover:bg-[var(--border)]"
+          aria-label={phase === "playing" ? "Pause" : phase === "loading" ? "Stop" : "Play the time-lapse"}
+          className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-[var(--text)] transition-colors disabled:opacity-40 ${
+            busy ? "bg-[var(--glass-active)]" : "bg-[var(--glass-hover)] hover:bg-[var(--glass-active)]"
           }`}
         >
-          <span aria-hidden="true">{phase === "playing" ? "❚❚" : phase === "loading" ? "■" : "▶"}</span>
-          {phase === "playing" ? "Pause" : phase === "loading" ? "Stop" : "Play"}
+          <svg aria-hidden="true" width="12" height="12" viewBox="0 0 12 12" fill="currentColor">
+            {phase === "playing" ? (
+              <path d="M3 2h2v8H3zM7 2h2v8H7z" />
+            ) : phase === "loading" ? (
+              <path d="M3 3h6v6H3z" />
+            ) : (
+              <path d="M3.5 2.2v7.6L9.8 6z" />
+            )}
+          </svg>
         </button>
-        <div className="w-28 shrink-0 text-sm font-medium text-[var(--text)] tabular-nums">
+        <div className="w-[104px] shrink-0 text-[12.5px] text-[var(--text)] tabular-nums">
           {phase === "loading" ? `Loading ${progress.done} of ${progress.total}` : current}
         </div>
-        <div className="relative h-10 min-w-0 flex-1">
+        <div className="relative h-7 min-w-0 flex-1">
           {eras.map((era) => (
             <div
               key={era.id}
               title={era.label}
               aria-hidden="true"
-              className="absolute top-0 bottom-0 overflow-hidden rounded-sm"
+              className="absolute top-0 bottom-0 overflow-hidden"
               style={{
                 left: `${(era.from / n) * 100}%`,
                 width: `${((era.to - era.from + 1) / n) * 100}%`,
                 backgroundColor: ERA_TINTS[era.i % ERA_TINTS.length],
-                borderLeft: era.from > 0 ? "2px solid var(--accent)" : undefined,
+                borderLeft: era.from > 0 ? "1px solid rgba(255, 255, 255, 0.18)" : undefined,
               }}
             >
-              <span className="block truncate px-1.5 pt-0.5 text-[10px] leading-tight text-[var(--text-dim)]">
+              <span className="block truncate px-1.5 text-[9.5px] leading-tight text-[var(--text-faint)]">
                 {era.name}
-                {era.from > 0 && <span className="text-[var(--accent)]"> · from {shortMonth(era.start)}</span>}
+                {era.from > 0 && <span className="text-[var(--text-faint)]"> · from {shortMonth(era.start)}</span>}
               </span>
             </div>
           ))}
@@ -98,7 +104,7 @@ export default function TimeLapseBar({ timeLapse, enabled }: Props) {
       </div>
       {phase === "loading" && (
         <div
-          className="mt-1.5 h-1 overflow-hidden rounded bg-[var(--border)]"
+          className="mt-1.5 h-px overflow-hidden bg-[var(--border)]"
           role="progressbar"
           aria-label="Loading the months"
           aria-valuemin={0}
@@ -112,7 +118,7 @@ export default function TimeLapseBar({ timeLapse, enabled }: Props) {
         </div>
       )}
       {error && (
-        <p role="alert" className="mt-1.5 text-[var(--accent)]">
+        <p role="alert" className="mt-1.5 text-[var(--warn)]">
           Could not load the months for the time-lapse: {error}
         </p>
       )}

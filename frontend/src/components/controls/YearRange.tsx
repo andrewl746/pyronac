@@ -35,8 +35,6 @@ export function YearRange() {
     if (selected && (selected.year < nextStart || selected.year > nextEnd)) setSelected(null);
   }
 
-  const selectClass = "cursor-pointer rounded border px-1.5 py-1 text-xs";
-  const selectStyle = { background: "var(--panel-2)", borderColor: "var(--border)", color: "var(--text)" };
 
   return (
     <fieldset className="m-0 flex items-center gap-2 border-0 p-0 text-xs">
@@ -44,8 +42,7 @@ export function YearRange() {
       <label className="flex items-center gap-1.5">
         <span style={{ color: "var(--text-dim)" }}>From</span>
         <select
-          className={selectClass}
-          style={selectStyle}
+          className="field"
           value={startYear}
           onChange={(event) => change(Number(event.target.value), endYear)}
         >
@@ -61,8 +58,7 @@ export function YearRange() {
       <label className="flex items-center gap-1.5">
         <span style={{ color: "var(--text-dim)" }}>to</span>
         <select
-          className={selectClass}
-          style={selectStyle}
+          className="field"
           value={endYear}
           onChange={(event) => change(startYear, Number(event.target.value))}
         >

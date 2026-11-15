@@ -21,9 +21,7 @@ function monthRange(year: number, month: number): [string, string] {
   return [`${year}-${pad(month)}-01`, `${year}-${pad(month)}-${pad(lastDay)}`];
 }
 
-const buttonClass = "inline-block cursor-pointer rounded border px-2.5 py-1 text-xs no-underline";
-const buttonStyle = { borderColor: "var(--border)", background: "var(--panel-2)", color: "var(--text)" };
-const disabledStyle = { ...buttonStyle, color: "var(--text-dim)", cursor: "not-allowed" };
+const buttonClass = "btn";
 
 function boxText(bbox: Bbox): string {
   return `Latitude ${bbox.south} to ${bbox.north}, longitude ${bbox.west} to ${bbox.east}`;
@@ -83,8 +81,8 @@ export function Downloads() {
               type="date"
               value={start}
               onChange={(event) => setEdited({ key: defaultKey, start: event.target.value, end })}
-              className="rounded border px-1.5 py-1"
-              style={{ ...buttonStyle, colorScheme: "dark" }}
+              className="field"
+              style={{ colorScheme: "dark" }}
             />
           </label>
           <label className="flex items-center gap-1.5">
@@ -93,23 +91,23 @@ export function Downloads() {
               type="date"
               value={end}
               onChange={(event) => setEdited({ key: defaultKey, start, end: event.target.value })}
-              className="rounded border px-1.5 py-1"
-              style={{ ...buttonStyle, colorScheme: "dark" }}
+              className="field"
+              style={{ colorScheme: "dark" }}
             />
           </label>
         </fieldset>
 
         <div className="flex flex-wrap items-center gap-2">
           {datesOk && !tooMany ? (
-            <a href={api.pointsCsvUrl(bbox, start, end)} download className={buttonClass} style={buttonStyle}>
+            <a href={api.pointsCsvUrl(bbox, start, end)} download className={buttonClass}>
               Hot spots (CSV)
             </a>
           ) : (
-            <span role="link" aria-disabled="true" className={buttonClass} style={disabledStyle}>
+            <span role="link" aria-disabled="true" className={buttonClass}>
               Hot spots (CSV)
             </span>
           )}
-          <span className="text-xs" aria-live="polite" style={{ color: "var(--text-dim)" }}>
+          <span className="text-[11px]" aria-live="polite" style={{ color: "var(--text-dim)" }}>
             {!datesOk
               ? "Choose a start date that is not after the end date."
               : count.isError
@@ -123,13 +121,12 @@ export function Downloads() {
         </div>
 
         <div className="flex flex-wrap gap-2">
-          <a href={api.calendarCsvUrl(bbox, startYear, endYear)} download className={buttonClass} style={buttonStyle}>
+          <a href={api.calendarCsvUrl(bbox, startYear, endYear)} download className={buttonClass}>
             Calendar (CSV)
           </a>
           <button
             type="button"
             className={buttonClass}
-            style={buttonStyle}
             onClick={() =>
               savePng(
                 document.getElementById(CALENDAR_SVG_ID),
@@ -144,7 +141,6 @@ export function Downloads() {
           <button
             type="button"
             className={buttonClass}
-            style={buttonStyle}
             onClick={() =>
               savePng(
                 document.getElementById(COMPARE_CHART_ID)?.querySelector("svg"),
@@ -168,8 +164,8 @@ export function Downloads() {
   }
 
   return (
-    <section aria-labelledby="downloads-heading" className="flex flex-col gap-2 text-sm">
-      <h2 id="downloads-heading" className="text-sm font-semibold">
+    <section aria-labelledby="downloads-heading" className="flex flex-col gap-3 text-[13px]">
+      <h2 id="downloads-heading" className="label">
         <span className="no-print">Downloads</span>
         <span className="print-only">Method</span>
       </h2>
