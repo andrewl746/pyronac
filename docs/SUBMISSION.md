@@ -1,4 +1,4 @@
-# Submission text: Pyronac, the fire almanac
+# Submission text: Pyronac, a fire record to plan with
 
 Draft by Sam, Saturday 14 November 2026. Numbers were read again on Saturday at 17:20 from the final
 data release (`data-3-countries-2003-2026-final-20261114`), `docs/METHOD.md` as written for that
@@ -9,7 +9,7 @@ Everyone on the team reads the final text before it is submitted.
 
 ## Project name
 
-Pyronac, the fire almanac
+Pyronac, a fire record to plan with
 
 ## High-level summary
 
@@ -231,7 +231,7 @@ This list was compared with `backend/requirements.txt`, `pipeline/requirements.t
 Text only. The pictures are screenshots of the app on the real data, taken by a person. No
 AI-generated images.
 
-1. **Pyronac, the fire almanac.** One line: one consistent fire record, 2003 to this month, for any
+1. **Pyronac, a fire record to plan with.** One line: one consistent fire record, 2003 to this month, for any
    area. Picture: the globe with burned cells.
 2. **The problem.** Two instruments, two scales. Canada's raw record jumps about fivefold from 2011
    to 2012 with no change on the ground. Picture: the calendar for the Northwest Territories in Raw

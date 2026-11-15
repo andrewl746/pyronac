@@ -22,7 +22,7 @@ export function BriefingHeader() {
 
   return (
     <div className="print-only briefing-title text-sm">
-      <h1 className="text-xl font-semibold">Pyronac, the fire almanac: fire briefing</h1>
+      <h1 className="text-xl font-semibold">Pyronac, a fire record to plan with: fire briefing</h1>
       {bbox ? (
         <p>
           {preset ? `${preset.name}. ` : ""}Latitude {bbox.south} to {bbox.north}, longitude {bbox.west} to {bbox.east}.

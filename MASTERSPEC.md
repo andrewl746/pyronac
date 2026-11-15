@@ -1,10 +1,10 @@
-# Pyronac, the fire almanac: master spec
+# Pyronac, a fire record to plan with: master spec
 
 NASA Space Apps Challenge 2026, Toronto, 14 to 15 November.
 Challenge: [MODIS and VIIRS hot spots](https://www.spaceappschallenge.org/2026/challenges/modis-and-viirs-hot-spots).
 Team: Andrew L, Vlad, Yuvi, Andrew N, Angela, Sam.
 
-The app is called **Pyronac**, from pyro and almanac. Its tagline is "the fire almanac". Use both together wherever a user first sees the name.
+The app is called **Pyronac**, from pyro and almanac. Its tagline is "a fire record to plan with" (it was "the fire almanac" until the base planner was added). Use both together wherever a user first sees the name.
 
 This file is the single source of truth for the project. Every teammate and every AI assistant works from it. It lives in the repo root as `MASTERSPEC.md`.
 
@@ -110,7 +110,7 @@ Local judges in Toronto score every project on five criteria: **impact, creativi
 
 ## 2. What we are building
 
-**Pyronac, the fire almanac,** is a web app. The user picks an area anywhere in Canada (then northern India and the Amazon) and sees the fire history of that area as one consistent record from 2003 to this month.
+**Pyronac, a fire record to plan with,** is a web app. The user picks an area anywhere in Canada (then northern India and the Amazon) and sees the fire history of that area as one consistent record from 2003 to this month.
 
 ### The user flow, which is also the demo
 

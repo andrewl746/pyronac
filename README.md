@@ -1,4 +1,4 @@
-# Pyronac, the fire almanac
+# Pyronac, a fire record to plan with
 
 NASA FIRMS MODIS and VIIRS fire history for Canada, India and Brazil, 2003 to this month,
 harmonized to the Suomi NPP VIIRS scale. NASA Space Apps Challenge 2026, Toronto.

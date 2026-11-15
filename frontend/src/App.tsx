@@ -3,7 +3,7 @@ import Menu from "./components/Menu";
 import Sidebar from "./components/Sidebar";
 import MapView from "./components/map/MapView";
 
-// The wordmark: a small ember and the name.
+// The wordmark: a small ember, the name and the tagline.
 function Logo() {
   return (
     <span className="flex items-center gap-2.5">
@@ -18,7 +18,10 @@ function Logo() {
         </defs>
         <circle cx="10" cy="10" r="10" fill="url(#ember)" />
       </svg>
-      <span className="wordmark">Pyronac</span>
+      <span className="flex flex-col leading-tight">
+        <span className="wordmark">Pyronac</span>
+        <span className="text-[11px] text-[var(--text-dim)]">A fire record to plan with</span>
+      </span>
     </span>
   );
 }
