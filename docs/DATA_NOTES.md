@@ -72,6 +72,19 @@ browser and were downloaded again before the build. No expected country, sensor 
 - The MODIS CSVs carry version labels `6.03`, `61.03` and `6.2`; VIIRS carries `2`. Left unchanged.
 - Busiest Suomi NPP year: Canada 2023 (1,641,678), India 2021, Brazil 2024.
 
+## The town list for the base planner (not NASA data)
+
+The base planner (`pipeline/base_sites.py`) reads a list of towns as well as `grid.parquet`. Nobody
+needs it to run the app: the planner's result, `frontend/src/components/bases/base_sites.json`, is
+committed.
+
+- Source: GeoNames `cities500.zip`, every place with 500 or more people,
+  https://download.geonames.org/export/dump/cities500.zip (about 14 MB). Licence CC BY 4.0, credit
+  "GeoNames". Downloaded on 14 November 2026.
+- Canada has 2,052 places in it after sections of cities (feature code PPLX) are left out.
+- To rebuild the result: put the zip in `data/raw/geonames/` and run
+  `python pipeline/base_sites.py --towns data/raw/geonames/cities500.zip`.
+
 ## Detections kept after cleaning, per year and satellite
 ['latitude', 'longitude', 'acq_date', 'acq_time', 'sensor', 'satellite', 'confidence', 'frp', 'daynight', 'country', 'cell_x', 'cell_y', 'year', 'month']
 
