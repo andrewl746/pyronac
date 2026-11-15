@@ -5,9 +5,14 @@ import { useEffect, useState } from "react";
 import type { Bbox } from "../../api/types";
 import { crossesDateLine, dragBox } from "../../lib/geo";
 
-const ACCENT = "#ff8a3d"; // --accent in the theme
+const ACCENT = "#8fb8de"; // --accent in the theme
 const SOURCE_SELECTED = "selected-box";
 const SOURCE_DRAW = "draw-box";
+const SOURCE_MASK = "selected-mask";
+// The world outside the selected box is dimmed this much, which also stops the fire glow at the
+// box edge (the glow spreads a little past the last cell).
+const MASK_OPACITY = 0.82;
+const MASK_LAT = 85.0511; // the globe has no tiles beyond this
 // A press and release that moves less than this many pixels is a click, not a box.
 const MIN_DRAG_PX = 6;
 
@@ -35,13 +40,24 @@ function boxPolygon(b: Bbox): Feature<Polygon> {
 export function addSelectionLayers(map: MapLibreMap, beforeId: string): void {
   map.addSource(SOURCE_SELECTED, { type: "geojson", data: EMPTY });
   map.addSource(SOURCE_DRAW, { type: "geojson", data: EMPTY });
+  map.addSource(SOURCE_MASK, { type: "geojson", data: EMPTY });
+  // Above the fire, trend and anomaly layers (added before this) and under the outline.
+  map.addLayer(
+    {
+      id: "selected-mask",
+      type: "fill",
+      source: SOURCE_MASK,
+      paint: { "fill-color": "#010205", "fill-opacity": MASK_OPACITY, "fill-antialias": false },
+    },
+    beforeId,
+  );
   // A dark casing under the outline keeps it visible on bright snow and desert.
   map.addLayer(
     {
       id: "selected-box-casing",
       type: "line",
       source: SOURCE_SELECTED,
-      paint: { "line-color": "rgba(0, 0, 0, 0.55)", "line-width": 5 },
+      paint: { "line-color": "rgba(0, 0, 0, 0.5)", "line-width": 3 },
     },
     beforeId,
   );
@@ -50,7 +66,7 @@ export function addSelectionLayers(map: MapLibreMap, beforeId: string): void {
       id: "selected-box-line",
       type: "line",
       source: SOURCE_SELECTED,
-      paint: { "line-color": ACCENT, "line-width": 2.5, "line-dasharray": [3, 1.5] },
+      paint: { "line-color": ACCENT, "line-width": 1.25, "line-dasharray": [4, 2] },
     },
     beforeId,
   );
@@ -59,7 +75,7 @@ export function addSelectionLayers(map: MapLibreMap, beforeId: string): void {
       id: "draw-box-fill",
       type: "fill",
       source: SOURCE_DRAW,
-      paint: { "fill-color": ACCENT, "fill-opacity": 0.12 },
+      paint: { "fill-color": ACCENT, "fill-opacity": 0.06 },
     },
     beforeId,
   );
@@ -68,14 +84,42 @@ export function addSelectionLayers(map: MapLibreMap, beforeId: string): void {
       id: "draw-box-line",
       type: "line",
       source: SOURCE_DRAW,
-      paint: { "line-color": ACCENT, "line-width": 2 },
+      paint: { "line-color": ACCENT, "line-width": 1.25 },
     },
     beforeId,
   );
 }
 
+// The whole world with the box cut out of it.
+function worldMinusBox(b: Bbox): Feature<Polygon> {
+  return {
+    type: "Feature",
+    properties: {},
+    geometry: {
+      type: "Polygon",
+      coordinates: [
+        [
+          [-180, -MASK_LAT],
+          [180, -MASK_LAT],
+          [180, MASK_LAT],
+          [-180, MASK_LAT],
+          [-180, -MASK_LAT],
+        ],
+        [
+          [b.west, b.south],
+          [b.west, b.north],
+          [b.east, b.north],
+          [b.east, b.south],
+          [b.west, b.south],
+        ],
+      ],
+    },
+  };
+}
+
 export function setSelectedBox(map: MapLibreMap, bbox: Bbox | null): void {
   map.getSource<GeoJSONSource>(SOURCE_SELECTED)?.setData(bbox ? boxPolygon(bbox) : EMPTY);
+  map.getSource<GeoJSONSource>(SOURCE_MASK)?.setData(bbox ? worldMinusBox(bbox) : EMPTY);
 }
 
 export const DATE_LINE_PROBLEM = "A box can't cross the 180° line. Draw it on one side of the line.";

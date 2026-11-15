@@ -1,11 +1,13 @@
-import { useState, type FormEvent } from "react";
+import { useEffect, useRef, useState, type FormEvent } from "react";
 import { useMeta } from "../../api/hooks";
 import type { Bbox } from "../../api/types";
 import { snapBbox } from "../../lib/geo";
 import { useStore } from "../../state/store";
+import { sameBox, usePresetName } from "./presetName";
 
-// MASTERSPEC.md section 8, region panel: presets, four edges with Apply, and Clear.
-// The inputs always show the current box, including one drawn on the map.
+// MASTERSPEC.md section 8, region panel: presets, four edges with Apply, and Clear. Shown as a glass
+// dropdown over the globe: the presets, Whole globe (clears the box), Draw area, and Custom… which
+// opens the four edges. The inputs always show the current box, including one drawn on the map.
 
 type Edge = keyof Bbox;
 type Draft = Record<Edge, string>;
@@ -27,9 +29,6 @@ function toDraft(bbox: Bbox | null): Draft {
   };
 }
 
-function sameBox(a: Bbox | null, b: Bbox): boolean {
-  return !!a && a.west === b.west && a.south === b.south && a.east === b.east && a.north === b.north;
-}
 
 // Returns a sentence a user can read, or null when the box is fine.
 function problemWith(draft: Draft): string | null {
@@ -44,10 +43,21 @@ function problemWith(draft: Draft): string | null {
   return null;
 }
 
-export default function RegionPanel() {
+type Props = {
+  drawing: boolean;
+  onDraw: () => void; // turns draw mode on or off
+  disabled: boolean; // until the map is ready
+  onWholeGlobe: () => void; // flies back to the whole globe
+};
+
+export default function RegionPanel({ drawing, onDraw, disabled, onWholeGlobe }: Props) {
   const bbox = useStore((s) => s.bbox);
   const setBbox = useStore((s) => s.setBbox);
   const meta = useMeta();
+  const presetName = usePresetName();
+  const [open, setOpen] = useState(false);
+  const [custom, setCustom] = useState(false);
+  const rootRef = useRef<HTMLDivElement>(null);
 
   const [draft, setDraft] = useState<Draft>(() => toDraft(bbox));
   const [problem, setProblem] = useState<string | null>(null);
@@ -58,6 +68,26 @@ export default function RegionPanel() {
     setDraft(toDraft(bbox));
     setProblem(null);
   }
+
+  // Close on Escape or a click outside.
+  useEffect(() => {
+    if (!open) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") {
+        setOpen(false);
+        rootRef.current?.querySelector<HTMLButtonElement>("button")?.focus();
+      }
+    };
+    const onDown = (e: PointerEvent) => {
+      if (!rootRef.current?.contains(e.target as Node)) setOpen(false);
+    };
+    window.addEventListener("keydown", onKey);
+    window.addEventListener("pointerdown", onDown);
+    return () => {
+      window.removeEventListener("keydown", onKey);
+      window.removeEventListener("pointerdown", onDown);
+    };
+  }, [open]);
 
   function apply(e: FormEvent) {
     e.preventDefault();
@@ -72,79 +102,124 @@ export default function RegionPanel() {
         north: Number(draft.north),
       }),
     );
+    setOpen(false);
   }
 
+  const current = drawing ? "Drawing…" : bbox ? (presetName ?? "Custom area") : "Whole globe";
+
   return (
-    <section aria-labelledby="region-heading" className="flex flex-col gap-3">
-      <h2 id="region-heading" className="text-sm font-semibold tracking-wide text-[var(--text)] uppercase">
-        Region
-      </h2>
+    <div ref={rootRef} className="relative">
+      <button
+        type="button"
+        aria-expanded={open}
+        aria-controls="region-menu"
+        disabled={disabled}
+        onClick={() => (drawing ? onDraw() : setOpen((o) => !o))}
+        className="map-btn"
+      >
+        <span className="text-[var(--text-faint)]">Region</span>
+        <span className="max-w-[180px] truncate text-[var(--text)]">{drawing ? "Cancel drawing" : current}</span>
+        <svg aria-hidden="true" width="10" height="10" viewBox="0 0 10 10" className="text-[var(--text-faint)]">
+          <path d="M2 3.5 5 6.5 8 3.5" fill="none" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" />
+        </svg>
+      </button>
 
-      <div className="flex flex-wrap gap-2" role="group" aria-label="Preset areas">
-        {meta.isPending && <span className="text-sm text-[var(--text-dim)]">Loading areas…</span>}
-        {meta.isError && <span className="text-sm text-[var(--text-dim)]">Could not load the preset areas.</span>}
-        {meta.data?.presets.map((preset) => {
-          const box = snapBbox(preset.bbox);
-          const active = sameBox(bbox, box);
-          return (
+      {open && (
+        <section
+          id="region-menu"
+          aria-label="Region"
+          className="map-panel absolute top-[calc(100%+10px)] left-1/2 z-20 w-[300px] -translate-x-1/2 p-1.5"
+          style={{ background: "var(--glass-bg-strong)" }}
+        >
+          <div role="group" aria-label="Preset areas" className="flex flex-col">
+            {meta.isPending && <span className="px-3 py-2 text-[12px] text-[var(--text-dim)]">Loading areas…</span>}
+            {meta.isError && (
+              <span className="px-3 py-2 text-[12px] text-[var(--text-dim)]">Could not load the preset areas.</span>
+            )}
             <button
-              key={preset.id}
               type="button"
-              aria-pressed={active}
-              onClick={() => setBbox(box)}
-              className={`rounded-md border px-2.5 py-1 text-sm transition-colors ${
-                active
-                  ? "border-[var(--accent)] bg-[var(--panel-2)] text-[var(--text)]"
-                  : "border-[var(--border)] bg-[var(--panel-2)] text-[var(--text-dim)] hover:text-[var(--text)]"
-              }`}
+              aria-pressed={bbox === null}
+              onClick={() => {
+                // With a box, clearing it flies back to the globe (MapView); without one, fly here.
+                if (bbox === null) onWholeGlobe();
+                setBbox(null);
+                setOpen(false);
+              }}
+              className="menu-item"
             >
-              {preset.name}
+              Whole globe
             </button>
-          );
-        })}
-      </div>
-
-      <form onSubmit={apply} noValidate className="flex flex-col gap-2">
-        <div className="grid grid-cols-2 gap-2">
-          {FIELDS.map(({ edge, label, min, max }) => (
-            <label key={edge} className="flex flex-col gap-1 text-xs text-[var(--text-dim)]">
-              {label} <span className="sr-only">edge in degrees</span>
-              <input
-                type="number"
-                inputMode="decimal"
-                step={0.1}
-                min={min}
-                max={max}
-                value={draft[edge]}
-                placeholder="degrees"
-                onChange={(e) => setDraft((d) => ({ ...d, [edge]: e.target.value }))}
-                aria-invalid={problem !== null}
-                aria-describedby={problem ? "region-problem" : undefined}
-                className="tabular-nums rounded-md border border-[var(--border)] bg-[var(--bg)] px-2 py-1.5 text-sm text-[var(--text)] placeholder:text-[var(--text-dim)]/60"
-              />
-            </label>
-          ))}
-        </div>
-        <p id="region-problem" role="alert" className="min-h-5 text-sm text-[var(--accent)]">
-          {problem}
-        </p>
-        <div className="flex gap-2">
-          <button
-            type="submit"
-            className="rounded-md border border-[var(--accent)] bg-[var(--accent)] px-3 py-1.5 text-sm font-medium text-black hover:brightness-110"
-          >
-            Apply
-          </button>
+            {meta.data?.presets.map((preset) => {
+              const box = snapBbox(preset.bbox);
+              const active = sameBox(bbox, box);
+              return (
+                <button
+                  key={preset.id}
+                  type="button"
+                  aria-pressed={active}
+                  onClick={() => {
+                    setBbox(box);
+                    setOpen(false);
+                  }}
+                  className="menu-item"
+                >
+                  {preset.name}
+                </button>
+              );
+            })}
+          </div>
+          <div className="mx-2 my-1.5 h-px bg-[var(--glass-border)]" aria-hidden="true" />
           <button
             type="button"
-            onClick={() => setBbox(null)}
-            disabled={bbox === null}
-            className="rounded-md border border-[var(--border)] bg-[var(--panel-2)] px-3 py-1.5 text-sm text-[var(--text)] hover:bg-[var(--border)] disabled:opacity-50"
+            onClick={() => {
+              setOpen(false);
+              onDraw();
+            }}
+            className="menu-item"
           >
-            Clear
+            Draw an area on the globe
           </button>
-        </div>
-      </form>
-    </section>
+          <button type="button" aria-expanded={custom} onClick={() => setCustom((c) => !c)} className="menu-item">
+            Custom…
+          </button>
+
+          {custom && (
+            <form onSubmit={apply} noValidate className="flex flex-col gap-1.5 px-2 pt-1 pb-2">
+              <div className="grid grid-cols-4 gap-1.5">
+                {FIELDS.map(({ edge, label, min, max }) => (
+                  <label key={edge} className="flex min-w-0 flex-col gap-1 text-[10.5px] text-[var(--text-dim)]">
+                    {label} <span className="sr-only">edge in degrees</span>
+                    <input
+                      type="number"
+                      inputMode="decimal"
+                      step={0.1}
+                      min={min}
+                      max={max}
+                      value={draft[edge]}
+                      placeholder="deg"
+                      onChange={(e) => setDraft((d) => ({ ...d, [edge]: e.target.value }))}
+                      aria-invalid={problem !== null}
+                      aria-describedby={problem ? "region-problem" : undefined}
+                      className="field w-full placeholder:text-[var(--text-faint)]"
+                    />
+                  </label>
+                ))}
+              </div>
+              <p id="region-problem" role="alert" className="min-h-4 text-[11px] text-[var(--warn)]">
+                {problem}
+              </p>
+              <div className="flex justify-end gap-2">
+                <button type="button" onClick={() => setBbox(null)} disabled={bbox === null} className="btn">
+                  Clear
+                </button>
+                <button type="submit" className="btn btn-primary">
+                  Apply
+                </button>
+              </div>
+            </form>
+          )}
+        </section>
+      )}
+    </div>
   );
 }

@@ -13,23 +13,23 @@ export default function AnomalyLegend({ monthLabel, partial, hasBox, loading, fa
   const month = monthLabel?.split(" ")[0] ?? "month";
   return (
     <div
-      className="pointer-events-auto absolute bottom-3 left-3 z-10 w-72 rounded-md border border-[var(--border)] bg-[var(--panel)]/90 p-3 text-xs shadow-lg backdrop-blur"
+      className="map-panel map-legend"
       aria-label="Anomaly legend"
       role="group"
     >
-      <div className="mb-1 font-semibold text-[var(--text)]">How unusual was {monthLabel ?? "this month"}?</div>
-      <div className="mb-2 text-[var(--text-dim)]">
+      <div className="mb-1 text-[12px] font-medium text-[var(--text)]">How unusual was {monthLabel ?? "this month"}?</div>
+      <div className="mb-2.5 text-[10.5px] leading-snug text-[var(--text-faint)]">
         Each cell against every other {month} since 2003{partial ? ". This month is not complete yet." : "."}
       </div>
-      <div className="mb-1 flex justify-end text-[var(--text-dim)]" aria-hidden="true">
+      <div className="mb-1 flex justify-end text-[10px] text-[var(--text-faint)]" aria-hidden="true">
         percentile
       </div>
-      <ul className="flex flex-col gap-1">
+      <ul className="flex flex-col gap-1 text-[11px]">
         {[...ANOMALY_CLASSES].reverse().map((c) => (
           <li key={c.label} className="flex items-center gap-2 text-[var(--text)]">
             <span
               aria-hidden="true"
-              className="block h-3 w-5 shrink-0 rounded-sm border border-black/40"
+              className="block h-2.5 w-2.5 shrink-0 rounded-full"
               style={{ backgroundColor: c.color, opacity: c.opacity }}
             />
             <span className="flex-1">{sentenceCase(c.label)}</span>
@@ -40,7 +40,7 @@ export default function AnomalyLegend({ monthLabel, partial, hasBox, loading, fa
           </li>
         ))}
       </ul>
-      <div className="mt-2 text-[var(--text-dim)]">
+      <div className="mt-2 text-[11px] text-[var(--text-faint)]">
         {failed
           ? "The anomaly data is unavailable right now."
           : !hasBox
