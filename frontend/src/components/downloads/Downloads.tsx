@@ -170,7 +170,13 @@ export function Downloads() {
         <span className="print-only">Method</span>
       </h2>
       {body}
-      {meta.data && <MethodNote harmonization={meta.data.harmonization} />}
+      {meta.data && (
+        <MethodNote
+          harmonization={meta.data.harmonization}
+          eras={meta.data.eras}
+          lastMonth={meta.data.last_month}
+        />
+      )}
     </section>
   );
 }
