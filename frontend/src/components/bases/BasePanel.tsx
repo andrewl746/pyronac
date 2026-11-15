@@ -1,11 +1,10 @@
 // The base planner: best-coverage sites in Canada for small fire bases (recon drones and a
 // helicopter crew), worked out once in Python (pipeline/base_sites.py) and shipped as
 // base_sites.json. Two parts in the night-globe layout:
-// - BasesMenuEntry: a "Fire bases" section in the menu with the "Show bases" switch;
-// - BasesTopButton: the same switch as a "Fire bases" button in the bar at the top of the map;
-// - BasePanel: the planner's own glass panel on the left of the globe, shown while the switch is on.
+// - BasesTopButton: a "Fire bases" button in the bar at the top of the map, which switches it on;
+// - BasePanel: the planner's own glass panel on the left of the globe, shown while the button is on.
 // The planner is country-wide, so it is not part of the selected area's insights panel.
-// Off by default; with it off, only the menu entry is added and nothing is loaded.
+// Off by default; with it off, only the button is added and nothing is loaded.
 import { useId, useState } from "react";
 import { Segmented } from "../controls/Segmented";
 import { BasePrint } from "./BasePrint";
@@ -16,43 +15,6 @@ import { printBaseList } from "./print";
 import { coveredSentence, earlySentence, limitsNote, peopleSentence, selftestSentence } from "./sentences";
 import { MIN_BASES, useBases } from "./store";
 import type { Reach } from "./types";
-
-function Switch({ on, onChange, label }: { on: boolean; onChange: (on: boolean) => void; label: string }) {
-  return (
-    <button
-      type="button"
-      role="switch"
-      aria-checked={on}
-      onClick={() => onChange(!on)}
-      className="btn"
-      style={on ? { borderColor: "var(--accent)" } : undefined}
-    >
-      <span aria-hidden="true" className="bases-switch-track" data-on={on}>
-        <span className="bases-switch-knob" />
-      </span>
-      {label}
-    </button>
-  );
-}
-
-// In the menu: two clicks from anywhere (open the menu, switch on).
-export function BasesMenuEntry() {
-  const on = useBases((s) => s.on);
-  const setOn = useBases((s) => s.setOn);
-  return (
-    <section aria-labelledby="bases-menu-heading" className="flex flex-col gap-2">
-      <div className="flex items-center justify-between">
-        <h2 id="bases-menu-heading" className="label">
-          Fire bases
-        </h2>
-        <Switch on={on} onChange={setOn} label="Show bases" />
-      </div>
-      <p className="m-0 text-[11px] text-[var(--text-faint)]">
-        Best-coverage sites in Canada for small fire bases, chosen from the summer fire record near towns.
-      </p>
-    </section>
-  );
-}
 
 // In the bar at the top of the map, next to the view switch: one click. The bases sit over
 // whichever view is showing, so this is a switch of its own and not one of the views.

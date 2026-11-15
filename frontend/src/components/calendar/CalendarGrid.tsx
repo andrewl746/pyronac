@@ -230,7 +230,7 @@ export function CalendarGrid({ months, mode, max, ramp, selected, onSelect, eraL
         <div
           id="calendar-tooltip"
           role="tooltip"
-          className="pointer-events-none absolute z-10 rounded border px-2 py-1 text-xs whitespace-nowrap"
+          className="pointer-events-none absolute z-10 border px-2 py-1 text-xs whitespace-nowrap"
           style={{
             background: "var(--panel-2)",
             borderColor: "var(--border)",

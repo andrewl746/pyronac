@@ -8,7 +8,7 @@ export const MIN_BASES = 1;
 export const MAX_BASES = 100;
 
 type BaseState = {
-  on: boolean; // "Show bases", off by default
+  on: boolean; // the "Fire bases" button, off by default
   count: number; // how many bases asked for; the panel shows at most the list length for the reach
   reach: Reach; // km, one of the reaches in base_sites.json; 100 by default
   printing: boolean; // true while the base list is being printed

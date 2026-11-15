@@ -62,7 +62,7 @@ export function TrendChart({ data }: { data: TrendResponse }) {
             if (!row) return null;
             return (
               <div
-                className="rounded border px-2 py-1 text-xs tabular-nums"
+                className="border px-2 py-1 text-xs tabular-nums"
                 style={{ background: "var(--panel-2)", borderColor: "var(--border)", color: "var(--text)" }}
               >
                 <div className="font-semibold">{row.year}</div>

@@ -8,37 +8,6 @@
   min-height: 180px;
 }
 
-/* The on/off switch inside a .btn. */
-.bases-switch-track {
-  position: relative;
-  display: inline-block;
-  width: 24px;
-  height: 14px;
-  border-radius: 999px;
-  background: var(--glass-active);
-  transition: background-color 120ms;
-}
-
-.bases-switch-track[data-on="true"] {
-  background: var(--accent);
-}
-
-.bases-switch-knob {
-  position: absolute;
-  top: 2px;
-  left: 2px;
-  width: 10px;
-  height: 10px;
-  border-radius: 999px;
-  background: var(--text-dim);
-  transition: left 120ms, background-color 120ms;
-}
-
-.bases-switch-track[data-on="true"] .bases-switch-knob {
-  left: 12px;
-  background: var(--bg);
-}
-
 .bases-slider {
   accent-color: var(--accent);
   cursor: pointer;

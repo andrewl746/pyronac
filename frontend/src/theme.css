@@ -68,7 +68,7 @@ body {
 .glass {
   background: var(--glass-bg);
   border: 1px solid var(--glass-border);
-  border-radius: 16px;
+  border-radius: 0;
   box-shadow: var(--glass-shadow);
   -webkit-backdrop-filter: blur(22px) saturate(150%);
   backdrop-filter: blur(22px) saturate(150%);
@@ -91,14 +91,14 @@ body {
   animation: sheet-in 320ms cubic-bezier(0.2, 0.8, 0.2, 1);
 }
 
-/* A round icon button on glass. */
+/* A square icon button on glass. */
 .icon-btn {
   display: inline-flex;
   align-items: center;
   justify-content: center;
   width: 36px;
   height: 36px;
-  border-radius: 999px;
+  border-radius: 0;
   color: var(--text-dim);
   cursor: pointer;
   transition: color 120ms, background-color 120ms;
@@ -117,7 +117,7 @@ body {
   color: var(--text);
   background: rgba(255, 255, 255, 0.04);
   border: 1px solid var(--glass-border);
-  border-radius: 8px;
+  border-radius: 0;
   font-variant-numeric: tabular-nums;
 }
 
@@ -147,7 +147,7 @@ select.field {
   color: var(--text);
   background: transparent;
   border: 1px solid var(--glass-border);
-  border-radius: 8px;
+  border-radius: 0;
   text-decoration: none;
   cursor: pointer;
   transition: background-color 120ms, border-color 120ms;

@@ -1,5 +1,5 @@
 // The base planner on the map: the first N sites as numbered markers with their reach circles.
-// MapView calls useBaseLayer(map) once. Nothing is added to the map until "Show bases" is first
+// MapView calls useBaseLayer(map) once. Nothing is added to the map until "Fire bases" is first
 // switched on, so with the planner off the map is exactly as before.
 import * as maplibregl from "maplibre-gl";
 import type { GeoJSONSource, Map as MapLibreMap } from "maplibre-gl";
