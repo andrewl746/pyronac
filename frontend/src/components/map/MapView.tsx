@@ -351,7 +351,7 @@ export default function MapView() {
             <button
               type="button"
               onClick={() => void active.refetch()}
-              className="border border-[var(--border-strong)] px-2 py-0.5 text-xs hover:bg-[var(--panel-2)]"
+              className="rounded-[4px] border border-[var(--border-strong)] px-2 py-0.5 text-xs hover:bg-[var(--panel-2)]"
             >
               Try again
             </button>
