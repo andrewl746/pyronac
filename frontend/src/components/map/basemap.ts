@@ -51,8 +51,10 @@ export const BASEMAP: StyleSpecification = {
       // Black Marble shows moonlit land and a navy sea. Kept a little cool and dim so the land reads
       // as dark slate; the sea is darkened further by the water layer below, so the continents
       // stand out without a daytime wash, and the city lights stay the brightest thing.
+      // Lifted a little (max 0.78 to 0.9, min 0 to 0.05) so the land reads in a daylit room.
       paint: {
-        "raster-brightness-max": 0.78,
+        "raster-brightness-max": 0.9,
+        "raster-brightness-min": 0.05,
         "raster-saturation": -0.35,
         "raster-contrast": 0.12,
         "raster-fade-duration": 300,
