@@ -7,9 +7,11 @@ const MONTH_NAMES = [
 
 const countFormat = new Intl.NumberFormat("en-US", { maximumFractionDigits: 1 });
 
-// 1042 -> "1,042", 55.3 -> "55.3", 61.0 -> "61"
+// Hot spots are counted whole, but harmonized counts are estimates with decimals. From 10 up the
+// decimal is noise, so it is dropped; below 10 one decimal stays, so 0.4 does not read as 0.
+// 1042.6 -> "1,043", 55.3 -> "55", 3.14 -> "3.1", 61.0 -> "61"
 export function formatCount(value: number): string {
-  return countFormat.format(value);
+  return countFormat.format(Math.abs(value) >= 10 ? Math.round(value) : value);
 }
 
 const compactFormat = new Intl.NumberFormat("en-US", { notation: "compact", maximumFractionDigits: 1 });

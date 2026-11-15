@@ -1,6 +1,6 @@
 // How the harmonized numbers were made, from harmonization.json by way of /api/meta.
 import type { Harmonization, MetaResponse } from "../../api/types";
-import { formatCount, formatDate, formatMonthYear } from "../../lib/format";
+import { formatDate, formatMonthYear } from "../../lib/format";
 
 const METHODS: Record<Harmonization["method"], string> = {
   v0: "placeholder (v0): one VIIRS to MODIS ratio per country",
@@ -9,7 +9,7 @@ const METHODS: Record<Harmonization["method"], string> = {
 };
 
 // The errors in harmonization.json are fractions: 0.1354 means 13.5% off.
-const percent = (fraction: number) => `${formatCount(Math.round(fraction * 1000) / 10)}%`;
+const percent = (fraction: number) => `${(Math.round(fraction * 1000) / 10).toFixed(1)}%`;
 
 // "2026-11" -> "November 2026"
 const monthText = (month: string) => formatMonthYear(Number(month.slice(0, 4)), Number(month.slice(5, 7)));

@@ -203,10 +203,9 @@ The yearly country files and the 2026 archive requests mix standard and near-rea
 
 - Challenge: https://www.spaceappschallenge.org/2026/challenges/modis-and-viirs-hot-spots
 - MapLibre GL JS, the map library.
-- Base map imagery: Sentinel-2 cloudless 2024 by EOX IT Services GmbH (contains modified Copernicus
-  Sentinel data 2024), https://s2maps.eu, licence CC BY-NC-SA 4.0. Borders and labels: OpenFreeMap,
-  © OpenMapTiles, data from OpenStreetMap. **TODO (Vlad):** confirm this is still the base map in
-  the final build.
+- Base map imagery: NASA Black Marble 2016 (VIIRS night lights), served by NASA GIBS,
+  https://earthdata.nasa.gov/gibs, public domain. Borders and labels: OpenFreeMap, © OpenMapTiles,
+  data from OpenStreetMap.
 - Town list for the base planner: GeoNames `cities500` (places with 500 or more people),
   https://www.geonames.org, licence CC BY 4.0.
 - Python libraries: DuckDB, FastAPI, uvicorn, NumPy, SciPy, pandas, PyArrow, scikit-learn, httpx,
