@@ -30,7 +30,7 @@ export default function Sidebar() {
         <button
           type="button"
           onClick={() => setClosedFor(null)}
-          className="glass map-btn no-print fixed top-[72px] right-5 z-20 h-9 rounded-full! px-4"
+          className="glass map-btn no-print fixed top-[72px] right-5 z-20 h-9 px-4"
         >
           Show insights
         </button>

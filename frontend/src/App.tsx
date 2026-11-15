@@ -43,7 +43,7 @@ export default function App() {
         </h1>
         {meta.data?.data_source === "fixtures" && (
           <span
-            className="pointer-events-auto rounded-full border border-[var(--warn)]/50 px-2 py-0.5 text-[11px] text-[var(--warn)]"
+            className="pointer-events-auto border border-[var(--warn)]/50 px-2 py-0.5 text-[11px] text-[var(--warn)]"
             title="The backend is serving the small fake fixture data set, not real FIRMS data."
           >
             Test data

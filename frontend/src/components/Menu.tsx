@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { useMeta } from "../api/hooks";
 import { formatDate } from "../lib/format";
-import { BasePanel, BasesMenuEntry } from "./bases/BasePanel";
+import { BasePanel } from "./bases/BasePanel";
 import { ModeSwitch } from "./controls/ModeSwitch";
 import { RampSwitch } from "./controls/RampSwitch";
 import { YearRange } from "./controls/YearRange";
@@ -38,7 +38,7 @@ export default function Menu() {
         aria-expanded={open}
         aria-controls="menu-drawer"
         onClick={() => setOpen((o) => !o)}
-        className="glass icon-btn no-print fixed top-5 right-5 z-40 h-9! w-9! rounded-full!"
+        className="glass icon-btn no-print fixed top-5 right-5 z-40 h-9! w-9!"
       >
         <svg aria-hidden="true" width="14" height="14" viewBox="0 0 14 14">
           {open ? (
@@ -77,7 +77,6 @@ export default function Menu() {
               </h2>
               <YearRange />
             </section>
-            <BasesMenuEntry />
             <Downloads />
             <p className="m-0 text-[11px] text-[var(--text-faint)]">
               Hot spots from NASA FIRMS (MODIS and VIIRS).
