@@ -1,0 +1,69 @@
+/* The base planner's own rules. theme.css (Sam's) is left as it is: its print rules still give
+   the usual briefing, and these only take over while "Print base list (PDF)" is printing. */
+
+.bases-slider {
+  accent-color: var(--accent);
+  cursor: pointer;
+}
+
+/* The column names stay in view while the table scrolls inside the panel. */
+.bases-table thead th {
+  position: sticky;
+  top: 0;
+  background: var(--panel-2);
+}
+
+/* The printed list exists only while printing, and only shows on paper. */
+.base-print {
+  display: none;
+}
+
+@media print {
+  /* One column at full page width, instead of the briefing's two scaled-down columns. */
+  body.printing-bases .briefing {
+    columns: auto;
+    width: auto;
+    zoom: 1;
+  }
+
+  /* Only the base list goes on paper. */
+  body.printing-bases .briefing > :not(.base-print) {
+    display: none !important;
+  }
+
+  body.printing-bases .briefing > .base-print {
+    display: block;
+    break-inside: auto;
+    margin: 0;
+  }
+
+  .base-print > * + * {
+    margin-top: 8px;
+  }
+
+  .base-print-map {
+    margin: 8px 0;
+    break-inside: avoid;
+  }
+
+  .base-print-map img {
+    display: block;
+    width: 100%;
+    height: auto;
+    max-height: 120mm;
+    object-fit: contain;
+  }
+
+  /* The table runs over as many pages as it needs, with its column names on each. */
+  .base-print .bases-table thead {
+    display: table-header-group;
+  }
+
+  .base-print .bases-table thead th {
+    position: static;
+  }
+
+  .base-print .bases-table tr {
+    break-inside: avoid;
+  }
+}

@@ -1,3 +1,4 @@
+import { BasePanel } from "./bases/BasePanel";
 import { BriefingHeader } from "./BriefingHeader";
 import { Calendar } from "./calendar/Calendar";
 import { ComparePanel } from "./compare/ComparePanel";
@@ -22,6 +23,7 @@ export default function Sidebar() {
       </section>
       <Calendar />
       <ComparePanel />
+      <BasePanel />
       <Downloads />
     </div>
   );
