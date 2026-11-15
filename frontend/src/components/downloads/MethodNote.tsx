@@ -13,24 +13,32 @@ const percent = (fraction: number) => `${formatCount(Math.round(fraction * 1000)
 
 export function MethodNote({ harmonization }: { harmonization: Harmonization }) {
   const { method, validation, data_through, reference } = harmonization;
+  const row = "grid grid-cols-[72px_1fr] gap-3";
   return (
-    <div className="flex flex-col gap-1 text-xs" style={{ color: "var(--text-dim)" }}>
-      <p>
-        <span style={{ color: "var(--text)" }}>Method:</span> {METHODS[method]}. Counts are on the scale of {reference}.
-      </p>
-      {validation ? (
-        <p>
-          <span style={{ color: "var(--text)" }}>Validation:</span> raw MODIS {percent(validation.raw_error)} off,
-          harmonized {percent(validation.harmonized_error)} off ({validation.metric}).
-        </p>
-      ) : (
-        <p>
-          <span style={{ color: "var(--text)" }}>Validation:</span> not run yet for this method.
-        </p>
-      )}
-      <p>
-        <span style={{ color: "var(--text)" }}>Data through:</span> {formatDate(data_through)}.
-      </p>
-    </div>
+    <dl className="m-0 mt-1 flex flex-col gap-1.5 border-t border-[var(--border)] pt-3 text-[11px] leading-relaxed" style={{ color: "var(--text-dim)" }}>
+      <div className={row}>
+        <dt className="text-[var(--text-faint)]">Method</dt>
+        <dd className="m-0">
+          {METHODS[method]}. Counts are on the scale of {reference}.
+        </dd>
+      </div>
+      <div className={row}>
+        <dt className="text-[var(--text-faint)]">Validation</dt>
+        <dd className="m-0">
+          {validation ? (
+            <>
+              raw MODIS <span className="text-[var(--text)]">{percent(validation.raw_error)}</span> off, harmonized{" "}
+              <span className="text-[var(--text)]">{percent(validation.harmonized_error)}</span> off ({validation.metric}).
+            </>
+          ) : (
+            "not run yet for this method."
+          )}
+        </dd>
+      </div>
+      <div className={row}>
+        <dt className="text-[var(--text-faint)]">Data through</dt>
+        <dd className="m-0 text-[var(--text)]">{formatDate(data_through)}</dd>
+      </div>
+    </dl>
   );
 }

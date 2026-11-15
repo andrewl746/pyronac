@@ -1,50 +1,57 @@
 import { useMeta } from "./api/hooks";
+import Menu from "./components/Menu";
 import Sidebar from "./components/Sidebar";
-import { ModeSwitch } from "./components/controls/ModeSwitch";
-import { RampSwitch } from "./components/controls/RampSwitch";
 import MapView from "./components/map/MapView";
-import { formatDate } from "./lib/format";
 
-// Layout from MASTERSPEC.md section 8: header, the map on the left, the sidebar on the right.
+// The wordmark: a small ember and the name.
+function Logo() {
+  return (
+    <span className="flex items-center gap-2.5">
+      <svg aria-hidden="true" width="20" height="20" viewBox="0 0 20 20">
+        <defs>
+          <radialGradient id="ember" cx="50%" cy="58%" r="50%">
+            <stop offset="0%" stopColor="#fff4d6" />
+            <stop offset="28%" stopColor="#ffc15a" />
+            <stop offset="62%" stopColor="#ff6a2b" stopOpacity="0.85" />
+            <stop offset="100%" stopColor="#ff3d1f" stopOpacity="0" />
+          </radialGradient>
+        </defs>
+        <circle cx="10" cy="10" r="10" fill="url(#ember)" />
+      </svg>
+      <span className="wordmark">Pyronac</span>
+    </span>
+  );
+}
+
+// The globe fills the window. On top, as glass: the logo (top left), the map tools (top centre,
+// in MapView), the menu (top right), the insights for a selected area (right), and the legend
+// and time-lapse (bottom, in MapView). MASTERSPEC.md section 8 layout, reworked for the demo.
 export default function App() {
   const meta = useMeta();
 
   return (
-    <div className="flex h-full flex-col">
-      <header className="flex h-12 shrink-0 items-center gap-4 border-b border-[var(--border)] bg-[var(--panel)] px-4">
-        <h1 className="text-base font-semibold tracking-tight">
-          Pyronac <span className="font-normal text-[var(--text-dim)]">the fire almanac</span>
+    <div className="relative h-full overflow-hidden bg-black">
+      <main className="absolute inset-0">
+        <section aria-label="Map" className="absolute inset-0">
+          <MapView />
+        </section>
+        <Sidebar />
+      </main>
+      <header className="pointer-events-none fixed top-5 left-6 z-30 flex h-9 items-center gap-3">
+        <h1 className="m-0">
+          <Logo />
         </h1>
-        {meta.data && (
-          <span className="tabular-nums text-sm text-[var(--text-dim)]">
-            data through {formatDate(meta.data.data_through)}
-          </span>
-        )}
         {meta.data?.data_source === "fixtures" && (
           <span
-            className="rounded border border-[var(--accent)]/60 px-1.5 py-0.5 text-xs text-[var(--accent)]"
+            className="pointer-events-auto rounded-full border border-[var(--warn)]/50 px-2 py-0.5 text-[11px] text-[var(--warn)]"
             title="The backend is serving the small fake fixture data set, not real FIRMS data."
           >
             Test data
           </span>
         )}
-        {meta.isError && <span className="text-sm text-[var(--accent)]">Could not reach the server.</span>}
-        <div className="ml-auto flex items-center gap-3">
-          <ModeSwitch />
-          <RampSwitch />
-        </div>
+        {meta.isError && <span className="text-[12px] text-[var(--warn)]">Could not reach the server.</span>}
       </header>
-      <main className="flex min-h-0 flex-1">
-        <section aria-label="Map" className="relative min-w-0 flex-1 bg-black">
-          <MapView />
-        </section>
-        <aside
-          aria-label="Details"
-          className="w-[440px] shrink-0 overflow-y-auto border-l border-[var(--border)] bg-[var(--panel)]"
-        >
-          <Sidebar />
-        </aside>
-      </main>
+      <Menu />
     </div>
   );
 }

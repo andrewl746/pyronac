@@ -1,15 +1,28 @@
 /* Pyronac theme. Dark only. Variables are from MASTERSPEC.md section 8.
    Use these everywhere instead of hard-coded colours. */
 :root {
-  --bg: #0b0d10;
-  --panel: #14181d;
-  --panel-2: #1b2027;
-  --border: #2a313a;
-  --text: #e8eaed;
-  --text-dim: #9aa4b1;
-  --accent: #ff8a3d;
-  --focus: #7cc4ff;
-  --zero-cell: #1e242c;
+  /* Values retuned for the night-globe look; names are from MASTERSPEC.md section 8. */
+  --bg: #07090c;
+  --panel: #0b0e12;
+  --panel-2: #12161b;
+  --border: #1d232a;
+  --text: #e4e7eb;
+  --text-dim: #97a1ad;
+  --accent: #8fb8de;
+  --focus: #9ccfff;
+  --zero-cell: rgba(255, 255, 255, 0.05);
+  /* Added for the restyle. */
+  --border-strong: #2a323b; /* inputs and hover edges */
+  --text-faint: #76808c; /* quieter text, still 4.5:1 on the panels */
+  --glass: rgba(9, 12, 16, 0.78); /* floating panels over the map */
+  --warn: #e8a35c; /* problems and test-data notes */
+  /* Frosted glass for everything that floats over the globe. */
+  --glass-bg: rgba(18, 22, 30, 0.5);
+  --glass-bg-strong: rgba(16, 19, 26, 0.72);
+  --glass-border: rgba(255, 255, 255, 0.09);
+  --glass-hover: rgba(255, 255, 255, 0.06);
+  --glass-active: rgba(255, 255, 255, 0.12);
+  --glass-shadow: 0 12px 40px rgba(0, 0, 0, 0.45), inset 0 1px 0 rgba(255, 255, 255, 0.05);
 
   color-scheme: dark;
 }
@@ -25,7 +38,185 @@ body {
   background: var(--bg);
   color: var(--text);
   font-family: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  font-size: 13px;
+  line-height: 1.45;
   font-variant-numeric: tabular-nums;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* A small, letter-spaced section label: the one heading style of the sidebar and the map panels. */
+.label {
+  font-size: 10.5px;
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--text-dim);
+}
+
+/* The Pyronac wordmark: warm light, like the fires it maps. */
+.wordmark {
+  font-size: 17px;
+  font-weight: 600;
+  letter-spacing: 0.015em;
+  background: linear-gradient(100deg, #ffe7c2 0%, #ffb15c 55%, #ff7440 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+/* Frosted glass surfaces. */
+.glass {
+  background: var(--glass-bg);
+  border: 1px solid var(--glass-border);
+  border-radius: 16px;
+  box-shadow: var(--glass-shadow);
+  -webkit-backdrop-filter: blur(22px) saturate(150%);
+  backdrop-filter: blur(22px) saturate(150%);
+  color: var(--text);
+}
+
+.glass-strong {
+  background: var(--glass-bg-strong);
+}
+
+/* Glass sheets slide in from the right when they open. */
+@keyframes sheet-in {
+  from {
+    transform: translateX(24px);
+    opacity: 0;
+  }
+}
+
+.sheet-in {
+  animation: sheet-in 320ms cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+/* A round icon button on glass. */
+.icon-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  border-radius: 999px;
+  color: var(--text-dim);
+  cursor: pointer;
+  transition: color 120ms, background-color 120ms;
+}
+
+.icon-btn:hover {
+  color: var(--text);
+  background: var(--glass-hover);
+}
+
+/* Form fields and buttons: one height, one radius, hairline edges. */
+.field {
+  height: 26px;
+  padding: 0 6px;
+  font-size: 12px;
+  color: var(--text);
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid var(--glass-border);
+  border-radius: 8px;
+  font-variant-numeric: tabular-nums;
+}
+
+select.field option {
+  background: #12161d;
+}
+
+.field:hover:not(:disabled) {
+  border-color: var(--text-faint);
+}
+
+.field:disabled {
+  opacity: 0.45;
+}
+
+select.field {
+  cursor: pointer;
+}
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 26px;
+  padding: 0 10px;
+  font-size: 12px;
+  color: var(--text);
+  background: transparent;
+  border: 1px solid var(--glass-border);
+  border-radius: 8px;
+  text-decoration: none;
+  cursor: pointer;
+  transition: background-color 120ms, border-color 120ms;
+}
+
+.btn:hover:not(:disabled):not([aria-disabled="true"]) {
+  background: var(--glass-hover);
+  border-color: rgba(255, 255, 255, 0.16);
+}
+
+.btn:disabled,
+.btn[aria-disabled="true"] {
+  color: var(--text-faint);
+  cursor: not-allowed;
+}
+
+/* The one primary action in a group: filled with the accent, used sparingly. */
+.btn-primary {
+  color: var(--bg);
+  background: var(--accent);
+  border-color: var(--accent);
+  font-weight: 600;
+}
+
+.btn-primary:hover:not(:disabled) {
+  background: var(--focus);
+  border-color: var(--focus);
+}
+
+/* A text-only button, for secondary actions next to a heading. */
+.btn-text {
+  padding: 0;
+  font-size: 11px;
+  color: var(--text-dim);
+  background: none;
+  border: 0;
+  cursor: pointer;
+}
+
+.btn-text:hover:not(:disabled) {
+  color: var(--text);
+}
+
+.btn-text:disabled {
+  color: var(--text-faint);
+  cursor: default;
+}
+
+/* Panels inside a glass sheet: stacked with hairline rules between them. */
+.sheet-sections > * + * {
+  margin-top: 18px;
+  padding-top: 18px;
+  border-top: 1px solid var(--glass-border);
+}
+
+.sheet-sections > .print-only + * {
+  margin-top: 0;
+  padding-top: 0;
+  border-top: 0;
+}
+
+.sheet-sections h2 {
+  margin: 0;
+}
+
+/* Quiet scrollbars. */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: var(--border-strong) transparent;
 }
 
 /* A visible focus ring on everything reachable by keyboard, SVG cells included. */
@@ -35,10 +226,9 @@ body {
 }
 
 /* The options of a switch sit inside a clipped, rounded frame, so their ring is drawn inside
-   the button. A second, dark line keeps it visible on the orange selected option. */
+   the button. */
 .segmented-option:focus-visible {
   outline-offset: -2px;
-  box-shadow: inset 0 0 0 4px var(--bg);
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -75,6 +265,9 @@ body {
     --accent: #b84a00;
     --focus: #1d6fb8;
     --zero-cell: #eceff3;
+    --border-strong: #9aa1ab;
+    --text-faint: #6b7280;
+    --warn: #b84a00;
     color-scheme: light;
   }
 
@@ -87,18 +280,30 @@ body {
     background: #ffffff !important;
   }
 
-  /* Only the sidebar goes on paper: no header, no map. */
+  /* Only the insights panel goes on paper: no logo, menu or map. */
   header,
   section[aria-label="Map"],
   .no-print {
     display: none !important;
   }
 
+  /* The insights panel floats as glass on screen; on paper it is plain. */
+  aside {
+    position: static !important;
+    max-height: none !important;
+    transform: none !important;
+    box-shadow: none !important;
+    -webkit-backdrop-filter: none !important;
+    backdrop-filter: none !important;
+    border-radius: 0 !important;
+  }
+
   main {
     display: block !important;
   }
 
-  aside {
+  aside,
+  aside > * {
     width: auto !important;
     overflow: visible !important;
     border: 0 !important;
@@ -121,6 +326,8 @@ body {
   }
 
   .briefing > * {
+    padding: 0 !important;
+    border: 0 !important;
     break-inside: avoid;
     margin: 0 0 20px;
   }

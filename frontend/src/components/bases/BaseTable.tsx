@@ -6,20 +6,22 @@ import type { BaseSite } from "./types";
 type Props = {
   sites: BaseSite[];
   caption: string;
-  scroll?: boolean; // on screen the table scrolls inside the panel; on paper it runs in full
+  // On screen, inside the planner's panel (which scrolls): 11 px text so all eight columns fit,
+  // glass hairlines and a header that stays in view. On paper: 12 px with printable rules.
+  compact?: boolean;
 };
 
 const cell = "px-1 py-1 text-right";
 
-export function BaseTable({ sites, caption, scroll = false }: Props) {
-  const table = (
-    // Slightly smaller on screen, so all eight columns fit the 440 px sidebar.
-    <table className={`bases-table w-full border-collapse tabular-nums ${scroll ? "text-[11px]" : "text-xs"}`}>
-      <caption className="pb-1 text-left" style={{ color: "var(--text-dim)" }}>
+export function BaseTable({ sites, caption, compact = false }: Props) {
+  const rule = compact ? "var(--glass-border)" : "var(--border)";
+  return (
+    <table className={`bases-table w-full border-collapse tabular-nums ${compact ? "is-compact text-[11px]" : "text-xs"}`}>
+      <caption className="pb-1.5 text-left text-[11px]" style={{ color: "var(--text-faint)" }}>
         {caption}
       </caption>
       <thead>
-        <tr style={{ background: "var(--panel-2)" }}>
+        <tr style={{ borderBottom: `1px solid ${rule}` }}>
           <th scope="col" className={cell}>
             #
           </th>
@@ -48,7 +50,7 @@ export function BaseTable({ sites, caption, scroll = false }: Props) {
       </thead>
       <tbody>
         {sites.map((site) => (
-          <tr key={site.rank} style={{ borderTop: "1px solid var(--border)" }}>
+          <tr key={site.rank} style={{ borderTop: `1px solid ${rule}` }}>
             <th scope="row" className={cell}>
               {site.rank}
             </th>
@@ -70,12 +72,5 @@ export function BaseTable({ sites, caption, scroll = false }: Props) {
         ))}
       </tbody>
     </table>
-  );
-  if (!scroll) return table;
-  return (
-    // Focusable so a keyboard user can scroll it.
-    <div tabIndex={0} role="region" aria-label={caption} className="max-h-80 overflow-auto rounded border" style={{ borderColor: "var(--border)" }}>
-      {table}
-    </div>
   );
 }

@@ -1,91 +1,178 @@
-/* MapLibre's own controls, restyled for the dark theme. */
+/* The map area: stars behind a transparent map, MapLibre's own controls restyled for the theme,
+   and the floating panels on top. Every floating thing sits on one 16px margin. */
+
+.pyronac-stars {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  display: block;
+  /* Deep space, a touch lighter toward the middle where the globe sits. */
+  background: radial-gradient(ellipse at 45% 45%, #070b12 0%, #030508 60%, #000 100%);
+}
+
 .pyronac-map {
   /* Set here, not with Tailwind: maplibre-gl.css sets position: relative outside any layer,
      which beats Tailwind's layered utilities. */
   position: absolute;
   inset: 0;
-  /* Space around the globe. */
-  background: radial-gradient(ellipse at center, #0b1220 0%, #05070b 70%, #000 100%);
+  /* Transparent, so the stars show around the globe. */
+  background: transparent;
 }
 
-.pyronac-map .maplibregl-ctrl-group {
-  background: var(--panel);
-  border: 1px solid var(--border);
-  box-shadow: none;
+/* The thin cool atmosphere around the globe (GlobeRim.tsx), behind the transparent map canvas. */
+.pyronac-rim {
+  position: absolute;
+  top: 0;
+  left: 0;
+  border-radius: 50%;
+  pointer-events: none;
+  box-shadow:
+    0 0 0 1px rgba(140, 185, 255, 0.28),
+    0 0 6px 1px rgba(110, 165, 255, 0.3),
+    0 0 26px 4px rgba(70, 130, 235, 0.14),
+    0 0 70px 10px rgba(50, 100, 210, 0.06);
+  transition: opacity 200ms;
 }
 
-.pyronac-map .maplibregl-ctrl-group button + button {
-  border-top: 1px solid var(--border);
+/* Floating panels over the map: frosted glass. */
+.map-panel {
+  pointer-events: auto;
+  background: var(--glass-bg);
+  border: 1px solid var(--glass-border);
+  border-radius: 14px;
+  box-shadow: var(--glass-shadow);
+  -webkit-backdrop-filter: blur(22px) saturate(150%);
+  backdrop-filter: blur(22px) saturate(150%);
+  color: var(--text);
 }
 
-.pyronac-map .maplibregl-ctrl-group button:not(:disabled):hover {
-  background-color: var(--panel-2);
+/* The legends: bottom left, above the attribution line. */
+.map-legend {
+  position: absolute;
+  left: 20px;
+  bottom: 32px;
+  z-index: 10;
+  width: 236px;
+  padding: 12px 14px;
+  font-size: 12px;
 }
 
-/* The control icons are dark images; turn them light. */
-.pyronac-map .maplibregl-ctrl-group button .maplibregl-ctrl-icon {
-  filter: invert(1) brightness(0.9);
+/* A glass segmented control: the map views. */
+.seg {
+  display: inline-flex;
+  padding: 3px;
+  gap: 2px;
+  border-radius: 999px;
 }
 
-.pyronac-map .maplibregl-ctrl button:focus-visible,
-.pyronac-map .maplibregl-canvas:focus-visible {
-  outline: 2px solid var(--focus);
-  outline-offset: -2px;
-  box-shadow: none;
-}
-
-.pyronac-map .maplibregl-ctrl-attrib {
-  background: rgba(20, 24, 29, 0.85);
+.map-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 28px;
+  padding: 0 14px;
+  font-size: 12.5px;
   color: var(--text-dim);
+  background: transparent;
+  border: 0;
+  border-radius: 999px;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: color 120ms, background-color 120ms;
+}
+
+.map-btn:hover:not(:disabled) {
+  color: var(--text);
+  background: var(--glass-hover);
+}
+
+.map-btn[aria-pressed="true"],
+.map-btn[aria-expanded="true"] {
+  color: var(--text);
+  background: var(--glass-active);
+}
+
+.map-btn:disabled {
+  opacity: 0.45;
+  cursor: default;
+}
+
+/* A dropdown list on glass. */
+.menu-item {
+  display: flex;
+  width: 100%;
+  align-items: center;
+  gap: 10px;
+  height: 32px;
+  padding: 0 12px;
+  font-size: 13px;
+  text-align: left;
+  color: var(--text-dim);
+  border-radius: 8px;
+  cursor: pointer;
+}
+
+.menu-item:hover {
+  color: var(--text);
+  background: var(--glass-hover);
+}
+
+.menu-item[aria-pressed="true"] {
+  color: var(--text);
+  background: var(--glass-active);
+}
+
+/* The attribution: one quiet line along the bottom right, always visible. */
+.pyronac-map .maplibregl-ctrl-bottom-right {
+  right: 0;
+  bottom: 0;
+}
+
+.pyronac-map .maplibregl-ctrl-attrib,
+.pyronac-map .maplibregl-ctrl-attrib.maplibregl-compact {
+  margin: 0;
+  padding: 3px 10px;
+  background: transparent;
+  color: var(--text-faint);
+  font-size: 10px;
+  line-height: 16px;
 }
 
 .pyronac-map .maplibregl-ctrl-attrib a {
   color: var(--text-dim);
 }
 
-.pyronac-map .maplibregl-ctrl-attrib.maplibregl-compact {
-  background: rgba(20, 24, 29, 0.85);
-}
-
 .pyronac-map .maplibregl-ctrl-attrib-button {
   filter: invert(1);
 }
 
-/* The hover box over a fire cell. */
+/* The hover box over a cell. */
 .pyronac-popup .maplibregl-popup-content {
-  background: var(--panel);
+  background: var(--glass-bg-strong);
+  -webkit-backdrop-filter: blur(18px);
+  backdrop-filter: blur(18px);
   color: var(--text);
-  border: 1px solid var(--border);
-  border-radius: 6px;
-  padding: 6px 10px;
+  border: 1px solid var(--glass-border);
+  border-radius: 10px;
+  padding: 8px 11px;
   font-size: 12px;
-  line-height: 1.4;
+  line-height: 1.45;
   font-variant-numeric: tabular-nums;
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.5);
+  box-shadow: none;
+}
+
+.pyronac-popup .maplibregl-popup-content strong {
+  font-weight: 600;
 }
 
 .pyronac-popup .maplibregl-popup-content span {
   color: var(--text-dim);
 }
 
-.pyronac-popup.maplibregl-popup-anchor-top .maplibregl-popup-tip,
-.pyronac-popup.maplibregl-popup-anchor-top-left .maplibregl-popup-tip,
-.pyronac-popup.maplibregl-popup-anchor-top-right .maplibregl-popup-tip {
-  border-bottom-color: var(--panel);
-}
-
-.pyronac-popup.maplibregl-popup-anchor-bottom .maplibregl-popup-tip,
-.pyronac-popup.maplibregl-popup-anchor-bottom-left .maplibregl-popup-tip,
-.pyronac-popup.maplibregl-popup-anchor-bottom-right .maplibregl-popup-tip {
-  border-top-color: var(--panel);
-}
-
-.pyronac-popup.maplibregl-popup-anchor-left .maplibregl-popup-tip {
-  border-right-color: var(--panel);
-}
-
-.pyronac-popup.maplibregl-popup-anchor-right .maplibregl-popup-tip {
-  border-left-color: var(--panel);
+/* No pointer triangle: the box floats beside the cursor. */
+.pyronac-popup .maplibregl-popup-tip {
+  display: none;
 }
 
 /* The time-lapse timeline: a native range input on top of the era bands. */
@@ -93,48 +180,49 @@
   appearance: none;
   -webkit-appearance: none;
   background: transparent;
-  height: 16px;
+  height: 14px;
   margin: 0;
   cursor: pointer;
 }
 
 .pyronac-timeline::-webkit-slider-runnable-track {
-  height: 4px;
-  border-radius: 2px;
-  background: rgba(255, 255, 255, 0.28);
+  height: 2px;
+  border-radius: 1px;
+  background: rgba(255, 255, 255, 0.14);
 }
 
 .pyronac-timeline::-moz-range-track {
-  height: 4px;
-  border-radius: 2px;
-  background: rgba(255, 255, 255, 0.28);
+  height: 2px;
+  border-radius: 1px;
+  background: rgba(255, 255, 255, 0.14);
 }
 
 .pyronac-timeline::-webkit-slider-thumb {
   -webkit-appearance: none;
-  width: 14px;
-  height: 14px;
+  width: 12px;
+  height: 12px;
   margin-top: -5px;
-  border: 2px solid #000;
+  border: 0;
   border-radius: 50%;
-  background: var(--accent);
+  background: var(--text);
+  box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.12);
 }
 
 .pyronac-timeline::-moz-range-thumb {
   width: 12px;
   height: 12px;
-  border: 2px solid #000;
+  border: 0;
   border-radius: 50%;
-  background: var(--accent);
+  background: var(--text);
 }
 
 /* No month selected: the handle waits at the start, dimmed. */
 .pyronac-timeline.is-unset::-webkit-slider-thumb {
-  background: var(--text-dim);
+  background: var(--text-faint);
 }
 
 .pyronac-timeline.is-unset::-moz-range-thumb {
-  background: var(--text-dim);
+  background: var(--text-faint);
 }
 
 .pyronac-timeline:focus-visible {

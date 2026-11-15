@@ -9,17 +9,21 @@ import { useStore } from "../../state/store";
 import { useBaseLayer } from "../bases/layer";
 import { BASEMAP, FIRST_LABEL_LAYER } from "./basemap";
 import { formatCount, formatMonthYear } from "../../lib/format";
-import { addAnomalyLayer, ANOMALY_CLASSES, ANOMALY_LAYER, ordinal, sentenceCase, setAnomalyData } from "./anomaly";
+import { addAnomalyLayer, ANOMALY_CLASSES, ANOMALY_LAYER, ANOMALY_LAYER_IDS, ordinal, sentenceCase, setAnomalyData } from "./anomaly";
 import AnomalyLegend from "./AnomalyLegend";
-import { addFireLayers, FIRE_LAYER_IDS, LAYER_FILL, setFireData } from "./fire";
+import { addFireLayers, FIRE_LAYER_IDS, LAYER_FILL, setFireData, setFireLatitude, setFireRamp } from "./fire";
+import GlobeRim from "./GlobeRim";
+import { setGlowLatitude } from "./glow";
+import RegionPanel from "../region/RegionPanel";
 import { mapPeriod, parseYearMonth, ym } from "./labels";
 import Legend from "./Legend";
 import MonthPicker from "./MonthPicker";
 import "./map.css";
 import { addSelectionLayers, setSelectedBox, useDrawBox } from "./selection";
+import Starfield from "./Starfield";
 import { useTimeLapse } from "./timeLapse";
 import TimeLapseBar from "./TimeLapseBar";
-import { addTrendLayer, setTrendData, signedCount, TREND_LAYER, useTrendMap } from "./trend";
+import { addTrendLayer, setTrendData, signedCount, TREND_LAYER, TREND_LAYER_IDS, useTrendMap } from "./trend";
 import TrendLegend from "./TrendLegend";
 
 // After bundling, MapLibre looks for its worker next to the bundle, where it is not (issue #22).
@@ -29,7 +33,7 @@ maplibregl.setWorkerUrl(workerUrl);
 // The opening view from MASTERSPEC.md section 8: the globe, centred over Canada.
 const START = { center: [-100, 55] as [number, number], zoom: 1.8 };
 
-// "fire" shows the hot spots (red gradient). "anomaly" shows how unusual one month is (extra #3).
+// "fire" shows the hot spots (colour ramp). "anomaly" shows how unusual one month is (extra #3).
 // "trend" shows how each cell's yearly count has changed over the full years of the range.
 type View = "fire" | "anomaly" | "trend";
 
@@ -59,6 +63,7 @@ export default function MapView() {
   const startYear = useStore((s) => s.startYear);
   const endYear = useStore((s) => s.endYear);
   const selected = useStore((s) => s.selected);
+  const ramp = useStore((s) => s.ramp);
   const period = mapPeriod(selected, startYear, endYear);
   const grid = useGrid(bbox ?? WORLD, period.start, period.end, bbox ? undefined : WORLD_STEP);
 
@@ -107,23 +112,23 @@ export default function MapView() {
       zoom: START.zoom,
       minZoom: 0.5,
       maxZoom: 16,
-      attributionControl: { compact: true },
+      attributionControl: { compact: false },
     });
-    instance.addControl(new maplibregl.NavigationControl({ visualizePitch: true }), "top-right");
+    // No zoom buttons: scroll, pinch and double-click zoom, and the globe stays uncluttered.
     instance.on("style.load", () => {
       instance.setProjection({ type: "globe" });
-      addFireLayers(instance, FIRST_LABEL_LAYER);
+      addFireLayers(instance, FIRST_LABEL_LAYER, useStore.getState().ramp);
       addAnomalyLayer(instance, FIRST_LABEL_LAYER);
       addTrendLayer(instance, FIRST_LABEL_LAYER);
       addSelectionLayers(instance, FIRST_LABEL_LAYER);
+      setFireLatitude(instance, instance.getCenter().lat);
+      setGlowLatitude(instance, instance.getCenter().lat);
       setMap(instance);
     });
-    // Fold the attribution into its (i) button once the sources have added their credits,
-    // so it does not run under the legend.
-    instance.once("idle", () => {
-      const attribution = container.querySelector(".maplibregl-ctrl-attrib");
-      attribution?.classList.remove("maplibregl-compact-show");
-      attribution?.removeAttribute("open");
+    // Keep the glow even across latitudes (see setFireLatitude).
+    instance.on("moveend", () => {
+      setFireLatitude(instance, instance.getCenter().lat);
+      setGlowLatitude(instance, instance.getCenter().lat);
     });
     return () => {
       setMap(null);
@@ -138,6 +143,11 @@ export default function MapView() {
   useEffect(() => {
     if (map) setFireData(map, grid.data, scaleMax ?? undefined);
   }, [map, grid.data, scaleMax]);
+
+  // Recolour the fire cells when the ramp switch changes.
+  useEffect(() => {
+    if (map) setFireRamp(map, ramp);
+  }, [map, ramp]);
 
   // Draw the anomaly cells. With no box there is nothing to compare, so the layer is emptied.
   useEffect(() => {
@@ -154,8 +164,8 @@ export default function MapView() {
     if (!map) return;
     const visible = (on: boolean) => (on ? "visible" : "none");
     for (const id of FIRE_LAYER_IDS) map.setLayoutProperty(id, "visibility", visible(view === "fire"));
-    map.setLayoutProperty(ANOMALY_LAYER, "visibility", visible(view === "anomaly"));
-    map.setLayoutProperty(TREND_LAYER, "visibility", visible(view === "trend"));
+    for (const id of ANOMALY_LAYER_IDS) map.setLayoutProperty(id, "visibility", visible(view === "anomaly"));
+    for (const id of TREND_LAYER_IDS) map.setLayoutProperty(id, "visibility", visible(view === "trend"));
   }, [map, view]);
 
   // Outline the selected box and fit the map to it. Clearing the box goes back to the globe.
@@ -170,8 +180,8 @@ export default function MapView() {
           [bbox.west, bbox.south],
           [bbox.east, bbox.north],
         ],
-        // Extra room at the bottom keeps the box clear of the time-lapse bar.
-        { padding: { top: 64, right: 64, bottom: 110, left: 64 }, maxZoom: 10, animate, duration: 1400 },
+        // Extra room keeps the box clear of the insights panel on the right and the time-lapse bar.
+        { padding: { top: 90, right: 460, bottom: 120, left: 80 }, maxZoom: 10, animate, duration: 1400 },
       );
     } else if (hadBox.current) {
       map.flyTo({ center: START.center, zoom: START.zoom, animate, duration: 1400 });
@@ -273,86 +283,65 @@ export default function MapView() {
   return (
     <>
       {/* The map tools come first so Tab reaches them before the map itself. */}
-      <div className="absolute top-3 left-3 z-10 flex items-center gap-2">
-        <button
-          type="button"
-          aria-pressed={drawing}
-          disabled={!map}
-          onClick={() => setDrawing((d) => !d)}
-          className={`rounded-md border px-3 py-1.5 text-sm font-medium shadow-lg transition-colors disabled:opacity-50 ${
-            drawing
-              ? "border-[var(--accent)] bg-[var(--accent)] text-black"
-              : "border-[var(--border)] bg-[var(--panel)] text-[var(--text)] hover:bg-[var(--panel-2)]"
-          }`}
-        >
-          {drawing ? "Cancel drawing" : "Draw area"}
-        </button>
-        {!drawing && (
-          <button
-            type="button"
+      <div className="absolute top-5 left-1/2 z-10 flex -translate-x-1/2 items-center gap-2">
+        <div className="map-panel seg">
+          <RegionPanel
+            drawing={drawing}
             disabled={!map}
-            onClick={showWholeGlobe}
-            className="rounded-md border border-[var(--border)] bg-[var(--panel)] px-3 py-1.5 text-sm text-[var(--text)] shadow-lg hover:bg-[var(--panel-2)] disabled:opacity-50"
-          >
-            Whole globe
-          </button>
-        )}
+            onDraw={() => setDrawing((d) => !d)}
+            onWholeGlobe={showWholeGlobe}
+          />
+        </div>
         {!drawing && (
-          <div
-            role="group"
-            aria-label="Map view"
-            className="flex overflow-hidden rounded-md border border-[var(--border)] shadow-lg"
-          >
+          <div role="group" aria-label="Map view" className="map-panel seg">
             {(["fire", "anomaly", "trend"] as const).map((v) => (
               <button
                 key={v}
                 type="button"
                 aria-pressed={view === v}
                 onClick={() => setView(v)}
-                className={`border-b-2 px-3 py-1.5 text-sm transition-colors ${
-                  view === v
-                    ? "border-[var(--accent)] bg-[var(--panel-2)] font-medium text-[var(--text)]"
-                    : "border-transparent bg-[var(--panel)] text-[var(--text-dim)] hover:text-[var(--text)]"
-                }`}
+                className="map-btn"
               >
                 {v === "fire" ? "Hot spots" : v === "anomaly" ? "Anomaly" : "Trend"}
               </button>
             ))}
           </div>
         )}
-        {drawing && (
-          <span
-            role="status"
-            className={`rounded-md bg-[var(--panel)]/90 px-2 py-1 text-xs ${drawProblem ? "text-[var(--accent)]" : "text-[var(--text-dim)]"}`}
-          >
-            {drawProblem ?? "Press, drag and release on the map. Esc cancels."}
-          </span>
-        )}
       </div>
+      {drawing && (
+        <div
+          role="status"
+          className={`map-panel absolute top-[76px] left-1/2 z-10 -translate-x-1/2 px-4 py-2 text-xs ${drawProblem ? "text-[var(--warn)]" : "text-[var(--text-dim)]"}`}
+        >
+          {drawProblem ?? "Press, drag and release on the globe. Esc cancels."}
+        </div>
+      )}
+      <Starfield />
+      <GlobeRim map={map} />
       <div ref={containerRef} className="pyronac-map" />
       {/* Below the toolbar so a long message never covers the buttons. */}
-      <div className="pointer-events-none absolute top-14 left-1/2 z-10 -translate-x-1/2">
+      <div className="pointer-events-none absolute top-[76px] left-1/2 z-10 -translate-x-1/2">
         {trendOn ? (
           trendMap.error ? (
-            <div role="alert" className="rounded-md border border-[var(--border)] bg-[var(--panel)] px-3 py-1.5 text-sm text-[var(--text)] shadow-lg">
+            <div role="alert" className="map-panel px-3 py-1.5 text-xs text-[var(--text)]">
               Could not load the trend: {trendMap.error.message}
             </div>
           ) : (
             trendMap.enough &&
             !trendMap.trends && (
-              <div role="status" className="rounded-md bg-[var(--panel)]/90 px-3 py-1.5 text-xs text-[var(--text-dim)] shadow-lg">
+              <div role="status" className="map-panel px-3 py-1.5 text-xs text-[var(--text-dim)]">
                 Loading the trend: {trendMap.done} of {trendMap.total} years…
               </div>
             )
           )
         ) : anomalyOn && !bbox ? (
-          <div role="status" className="rounded-md bg-[var(--panel)]/90 px-3 py-1.5 text-xs text-[var(--text-dim)] shadow-lg">
+          <div role="status" className="map-panel px-3 py-1.5 text-xs text-[var(--text-dim)]">
             Pick an area to see how unusual {anomalyLabel ?? "the month"} was there.
           </div>
         ) : active.isError ? (
           <div
             role="alert"
-            className="pointer-events-auto flex items-center gap-3 rounded-md border border-[var(--border)] bg-[var(--panel)] px-3 py-1.5 text-sm text-[var(--text)] shadow-lg"
+            className="pointer-events-auto flex items-center gap-3 map-panel px-3 py-1.5 text-xs text-[var(--text)]"
           >
             <span>
               Could not load {anomalyOn ? "the anomaly map" : "hot spots"}: {active.error?.message}
@@ -360,7 +349,7 @@ export default function MapView() {
             <button
               type="button"
               onClick={() => void active.refetch()}
-              className="rounded border border-[var(--border)] px-2 py-0.5 text-xs hover:bg-[var(--panel-2)]"
+              className="rounded-[2px] border border-[var(--border-strong)] px-2 py-0.5 text-xs hover:bg-[var(--panel-2)]"
             >
               Try again
             </button>
@@ -369,7 +358,7 @@ export default function MapView() {
           (active.isFetching || !map) && (
             <div
               role="status"
-              className="rounded-md bg-[var(--panel)]/90 px-3 py-1.5 text-xs text-[var(--text-dim)] shadow-lg"
+              className="map-panel px-3 py-1.5 text-xs text-[var(--text-dim)]"
             >
               {!map ? "Loading the globe…" : anomalyOn ? "Loading the anomaly map…" : "Loading hot spots…"}
             </div>

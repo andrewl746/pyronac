@@ -40,15 +40,15 @@ export function Summary() {
       endYear,
     );
     body = (
-      <p aria-live="polite" className="leading-relaxed">
+      <p aria-live="polite" className="text-[14px] leading-relaxed text-[var(--text)]">
         {text}
       </p>
     );
   }
 
   return (
-    <section aria-labelledby="summary-heading" className="flex flex-col gap-2 text-sm">
-      <h2 id="summary-heading" className="text-sm font-semibold">
+    <section aria-labelledby="summary-heading" className="flex flex-col gap-2 text-[13px]">
+      <h2 id="summary-heading" className="label">
         In plain words
       </h2>
       {body}

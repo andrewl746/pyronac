@@ -17,8 +17,8 @@ export function Segmented<T extends string>({ label, describedBy, options, value
       role="group"
       aria-label={label}
       aria-describedby={describedBy}
-      className="inline-flex overflow-hidden rounded border"
-      style={{ borderColor: "var(--border)" }}
+      className="inline-flex h-[30px] overflow-hidden rounded-full p-[3px]"
+      style={{ background: "rgba(255, 255, 255, 0.05)" }}
     >
       {options.map((option) => {
         const on = option.value === value;
@@ -29,11 +29,10 @@ export function Segmented<T extends string>({ label, describedBy, options, value
             aria-pressed={on}
             title={option.title}
             onClick={() => onChange(option.value)}
-            className="segmented-option flex cursor-pointer items-center gap-1.5 px-2.5 py-1 text-xs"
+            className="segmented-option flex cursor-pointer items-center gap-1.5 rounded-full px-3 text-[12px] transition-colors"
             style={{
-              background: on ? "var(--accent)" : "transparent",
-              color: on ? "var(--bg)" : "var(--text)",
-              fontWeight: on ? 600 : 400,
+              background: on ? "rgba(255, 255, 255, 0.13)" : "transparent",
+              color: on ? "var(--text)" : "var(--text-dim)",
             }}
           >
             {option.label}

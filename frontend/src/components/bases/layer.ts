@@ -4,6 +4,7 @@
 import * as maplibregl from "maplibre-gl";
 import type { GeoJSONSource, Map as MapLibreMap } from "maplibre-gl";
 import { useEffect, useRef } from "react";
+import { useStore } from "../../state/store";
 import { FIRST_LABEL_LAYER } from "../map/basemap";
 import { reachResult, useBaseSites } from "./data";
 import { circlesGeoJson, pointsGeoJson } from "./geo";
@@ -16,9 +17,10 @@ const SOURCE_POINTS = "base-points";
 export const BASE_MARKER_LAYER = "base-marker";
 const LAYER_IDS = ["base-circle-fill", "base-circle-casing", "base-circle-line", BASE_MARKER_LAYER, "base-label"];
 
-// White with a dark edge reads over the satellite image and over both fire ramps (inferno and cividis).
+// White with a dark edge reads over the night globe, the heatmap glow at its brightest, and the
+// dimmed area outside a selected box.
 const LIGHT = "#ffffff";
-const DARK = "#0b0d10"; // --bg in the theme
+const DARK = "#07090c"; // --bg in the theme
 
 // Where the planner's sites are: southern Canada to the treeline, coast to coast.
 const CANADA: [[number, number], [number, number]] = [
@@ -30,6 +32,19 @@ const EMPTY = { type: "FeatureCollection" as const, features: [] };
 
 function reducedMotion(): boolean {
   return window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+}
+
+// Room for the glass panels over the globe: the planner's panel on the left (420 px wide, 20 px in)
+// and, when an area is selected, its insights panel on the right. Narrow windows get a plain margin.
+function fitPadding() {
+  const wide = window.innerWidth >= 1000;
+  const side = 460;
+  return {
+    top: 80,
+    bottom: 110,
+    left: wide ? side : 64,
+    right: wide && useStore.getState().bbox !== null ? side : 64,
+  };
 }
 
 function escapeHtml(text: string): string {
@@ -125,6 +140,8 @@ export function useBaseLayer(map: MapLibreMap | null): void {
 
   // Draw the first N sites, or nothing when the planner is off.
   const sitesRef = useRef<BaseSite[]>([]);
+  // A base's popup describes one list, so it closes whenever the list shown changes.
+  const popupRef = useRef<maplibregl.Popup | null>(null);
   useEffect(() => {
     if (!map || !map.getSource(SOURCE_POINTS)) return;
     const shown = on && result ? result.sites.slice(0, count) : [];
@@ -132,6 +149,7 @@ export function useBaseLayer(map: MapLibreMap | null): void {
     map.getSource<GeoJSONSource>(SOURCE_CIRCLES)?.setData(result && shown.length ? circlesGeoJson(shown, result.reach_km) : EMPTY);
     map.getSource<GeoJSONSource>(SOURCE_POINTS)?.setData(shown.length ? pointsGeoJson(shown) : EMPTY);
     for (const id of LAYER_IDS) map.setLayoutProperty(id, "visibility", on ? "visible" : "none");
+    popupRef.current?.remove();
   }, [map, on, reach, count, result]);
 
   // Zoom to Canada when the planner is switched on, or when the map finishes loading if the
@@ -141,7 +159,7 @@ export function useBaseLayer(map: MapLibreMap | null): void {
     if (!map) return;
     if (on && !wasOn.current) {
       map.fitBounds(CANADA, {
-        padding: { top: 64, right: 64, bottom: 110, left: 64 },
+        padding: fitPadding(),
         animate: !reducedMotion(),
         duration: 1400,
       });
@@ -154,6 +172,7 @@ export function useBaseLayer(map: MapLibreMap | null): void {
   useEffect(() => {
     if (!map || !on) return;
     const popup = new maplibregl.Popup({ closeButton: true, offset: 12, className: "pyronac-popup", maxWidth: "260px" });
+    popupRef.current = popup;
     const canvas = map.getCanvas();
     const click = map.on("click", BASE_MARKER_LAYER, (e) => {
       if (!map.dragPan.isEnabled()) return; // draw mode is on

@@ -58,22 +58,18 @@ export function Calendar() {
   }
 
   return (
-    <section aria-labelledby="calendar-heading" className="flex flex-col gap-2 text-sm">
+    <section aria-labelledby="calendar-heading" className="flex flex-col gap-3 text-[13px]">
       <div className="flex items-center justify-between">
-        <h2 id="calendar-heading" className="text-sm font-semibold">
-          Fire calendar <span style={{ color: "var(--text-dim)", fontWeight: 400 }}>({mode})</span>
+        <h2 id="calendar-heading" className="label">
+          Fire calendar <span className="ml-1 font-normal tracking-normal normal-case text-[var(--text-faint)]">{mode}</span>
         </h2>
         {bbox && (
           <button
             type="button"
             aria-pressed={showTable}
             onClick={() => setShowTable((value) => !value)}
-            className="no-print cursor-pointer rounded border px-2 py-0.5 text-xs"
-            style={{
-              borderColor: "var(--border)",
-              background: showTable ? "var(--panel-2)" : "transparent",
-              color: "var(--text)",
-            }}
+            className="no-print btn-text"
+            style={showTable ? { color: "var(--text)", textDecoration: "underline", textUnderlineOffset: 3 } : undefined}
           >
             Table
           </button>

@@ -23,7 +23,7 @@ export function CompareChart({ rows, median, band, rowLabel }: Props) {
           dataKey="year"
           tick={{ fontSize: 10, fill: "var(--text-dim)" }}
           tickLine={false}
-          axisLine={{ stroke: "var(--border)" }}
+          axisLine={{ stroke: "var(--border-strong)" }}
           interval="preserveStartEnd"
           minTickGap={18}
         />
@@ -35,32 +35,32 @@ export function CompareChart({ rows, median, band, rowLabel }: Props) {
           axisLine={false}
           tickCount={3}
         />
-        {band && <ReferenceArea y1={band[0]} y2={band[1]} fill="var(--focus)" fillOpacity={0.18} stroke="none" />}
+        {band && <ReferenceArea y1={band[0]} y2={band[1]} fill="var(--text)" fillOpacity={0.07} stroke="none" />}
         <Bar dataKey="value" isAnimationActive={false}>
           {rows.map((row) => (
             <Cell
               key={row.year}
               fill={row.highlight ? "var(--accent)" : "var(--text-dim)"}
-              fillOpacity={row.partial ? 0.3 : row.highlight ? 1 : 0.55}
+              fillOpacity={row.partial ? 0.2 : row.highlight ? 1 : 0.4}
             />
           ))}
-          <ErrorBar dataKey="spread" width={3} strokeWidth={1.25} stroke="var(--text)" isAnimationActive={false} />
+          <ErrorBar dataKey="spread" width={3} strokeWidth={1} stroke="var(--text-dim)" isAnimationActive={false} />
         </Bar>
         {median !== null && (
-          <ReferenceLine y={median} stroke="var(--text)" strokeDasharray="4 3" strokeWidth={1.25} />
+          <ReferenceLine y={median} stroke="var(--text)" strokeOpacity={0.7} strokeDasharray="3 3" strokeWidth={1} />
         )}
         <Tooltip
-          cursor={{ fill: "var(--panel-2)" }}
+          cursor={{ fill: "rgba(255, 255, 255, 0.04)" }}
           isAnimationActive={false}
           content={({ active, payload }) => {
             const row = active ? (payload?.[0]?.payload as CompareRow | undefined) : undefined;
             if (!row) return null;
             return (
               <div
-                className="rounded border px-2 py-1 text-xs"
-                style={{ background: "var(--panel-2)", borderColor: "var(--border)", color: "var(--text)" }}
+                className="rounded-[2px] border px-2 py-1 text-xs"
+                style={{ background: "var(--panel-2)", borderColor: "var(--border-strong)", color: "var(--text)" }}
               >
-                <div className="font-semibold">
+                <div className="font-medium">
                   {rowLabel(row)}
                   {row.partial ? " (so far)" : ""}
                 </div>
