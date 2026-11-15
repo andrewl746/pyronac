@@ -6,6 +6,7 @@ import { useAnomaly, useGrid, useMeta } from "../../api/hooks";
 import type { Bbox } from "../../api/types";
 import { snapBbox, WORLD, WORLD_STEP } from "../../lib/geo";
 import { useStore } from "../../state/store";
+import { BasesTopButton } from "../bases/BasePanel";
 import { useBaseLayer } from "../bases/layer";
 import { BASEMAP, FIRST_LABEL_LAYER } from "./basemap";
 import { formatCount, formatMonthYear } from "../../lib/format";
@@ -307,6 +308,7 @@ export default function MapView() {
             ))}
           </div>
         )}
+        {!drawing && <BasesTopButton />}
       </div>
       {drawing && (
         <div

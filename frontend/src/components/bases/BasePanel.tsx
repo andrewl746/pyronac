@@ -2,6 +2,7 @@
 // helicopter crew), worked out once in Python (pipeline/base_sites.py) and shipped as
 // base_sites.json. Two parts in the night-globe layout:
 // - BasesMenuEntry: a "Fire bases" section in the menu with the "Show bases" switch;
+// - BasesTopButton: the same switch as a "Fire bases" button in the bar at the top of the map;
 // - BasePanel: the planner's own glass panel on the left of the globe, shown while the switch is on.
 // The planner is country-wide, so it is not part of the selected area's insights panel.
 // Off by default; with it off, only the menu entry is added and nothing is loaded.
@@ -50,6 +51,20 @@ export function BasesMenuEntry() {
         Best-coverage sites in Canada for small fire bases, chosen from the summer fire record near towns.
       </p>
     </section>
+  );
+}
+
+// In the bar at the top of the map, next to the view switch: one click. The bases sit over
+// whichever view is showing, so this is a switch of its own and not one of the views.
+export function BasesTopButton() {
+  const on = useBases((s) => s.on);
+  const setOn = useBases((s) => s.setOn);
+  return (
+    <div className="map-panel seg">
+      <button type="button" aria-pressed={on} onClick={() => setOn(!on)} className="map-btn">
+        Fire bases
+      </button>
+    </div>
   );
 }
 
