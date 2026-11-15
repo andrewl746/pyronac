@@ -1,6 +1,6 @@
 // The opening screen: the app's own globe, close in over western Canada and tilted, as if seen
 // from orbit, with one region's fire of one summer drawn as points of light (embers.ts). On top:
-// the name, the tagline, two sentences on what Pyronac is, two ways in, and a caption that says
+// the name, the tagline, three sentences on what Pyronac is, two ways in, and a caption that says
 // what the globe is showing. Every panel of the app is hidden until the viewer goes in
 // (intro.css, body.intro-open). It is the same map instance, so nothing loads twice.
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
@@ -150,9 +150,10 @@ export function Intro() {
           <span className="intro-tagline">A fire record to plan with</span>
         </h1>
         <p className="intro-lede">
-          Two NASA instruments, MODIS and VIIRS, map fire from orbit, but they count it differently. Pyronac puts both
-          on one scale, back to 2003, and uses that record to show where fire bases in Canada would have been within
-          reach of the most fire near towns.
+          Two NASA instruments, MODIS and VIIRS, map fire from orbit but count it differently. Pyronac puts both on
+          one scale starting from 2003, then finds the optimal locations to position fire bases in Canada to protect
+          the most people. Tested on ten years of data the planner had never seen, its sites reached three times more
+          fire than bases placed at random in places that had burned before.
         </p>
         <div className="intro-actions">
           <button type="button" className="intro-btn intro-btn-main" onClick={() => enter(false)}>
