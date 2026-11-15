@@ -1,13 +1,9 @@
-// "Print base list (PDF)": a picture of the map, then the browser's print dialog with the base
-// list layout (bases.css). The map is not created with preserveDrawingBuffer, so its canvas is
-// read inside a "render" event, right after MapLibre has drawn the frame and before it is cleared.
+// The picture of the map for the downloaded base list (pdf.ts). The map is not created with
+// preserveDrawingBuffer, so its canvas is read inside a "render" event, right after MapLibre has
+// drawn the frame and before it is cleared.
 import type { Map as MapLibreMap } from "maplibre-gl";
-import { flushSync } from "react-dom";
 import { circlesBounds } from "./geo";
-import { useBases } from "./store";
 import type { BaseSite } from "./types";
-
-export const PRINTING_CLASS = "printing-bases";
 
 // Resolves on the map's next "idle" (every tile drawn), or after `ms` at the latest.
 function settled(map: MapLibreMap, ms: number): Promise<void> {
@@ -39,8 +35,8 @@ function isBlank(source: HTMLCanvasElement): boolean {
   return !seen || !varied;
 }
 
-// The printed picture is at most the page's text width (about 703 CSS px, A4 less 12 mm margins)
-// and 120 mm (about 453 CSS px) tall; see .base-print-map in bases.css.
+// The picture is at most the page's text width (about 703 CSS px on A4) and 120 mm (about 453 CSS
+// px) tall in the PDF (pdf.ts).
 const PRINT_WIDTH = 703;
 const PRINT_HEIGHT = 453;
 const PRINTED_TEXT_PX = 9; // how big the numbers come out on paper
@@ -106,29 +102,10 @@ function takePicture(map: MapLibreMap, sites: BaseSite[]): Promise<string | null
 }
 
 // Fits the map to the sites and their circles, waits for the tiles, and returns a PNG data URL,
-// or null when the picture could not be taken (the printed list then shows a simple sketch).
+// or null when the picture could not be taken (the PDF then says so).
 export async function mapPicture(map: MapLibreMap, sites: BaseSite[], km: number): Promise<string | null> {
   const bounds = circlesBounds(sites, km);
   if (bounds) map.fitBounds(bounds, { padding: 40, maxZoom: 7, animate: false });
   await settled(map, 8000);
   return takePicture(map, sites);
-}
-
-function nextFrame(): Promise<void> {
-  return new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(() => resolve())));
-}
-
-// Renders the print layout, opens the print dialog, and puts the page back afterwards.
-export async function printBaseList(sites: BaseSite[], km: number): Promise<void> {
-  const { map, setPrinting } = useBases.getState();
-  const image = map ? await mapPicture(map, sites, km) : null;
-  flushSync(() => setPrinting(true, image));
-  document.body.classList.add(PRINTING_CLASS);
-  await nextFrame();
-  const done = () => {
-    document.body.classList.remove(PRINTING_CLASS);
-    useBases.getState().setPrinting(false);
-  };
-  window.addEventListener("afterprint", done, { once: true });
-  window.print();
 }

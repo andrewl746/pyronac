@@ -1,6 +1,7 @@
 import { useMeta } from "./api/hooks";
 import Menu from "./components/Menu";
 import Sidebar from "./components/Sidebar";
+import { Intro } from "./components/intro/Intro";
 import MapView from "./components/map/MapView";
 
 // The wordmark: a small ember, the name and the tagline.
@@ -55,6 +56,7 @@ export default function App() {
         {meta.isError && <span className="text-[12px] text-[var(--warn)]">Could not reach the server.</span>}
       </header>
       <Menu />
+      <Intro />
     </div>
   );
 }

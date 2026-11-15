@@ -1,5 +1,5 @@
-/* The base planner's own rules. theme.css is left as it is: its print rules still give the
-   usual briefing, and these only take over while "Print base list (PDF)" is printing. */
+/* The base planner's own rules. The base list is downloaded as a PDF (pdf.ts), so nothing here
+   is for printing; theme.css's print rules still give the usual briefing. */
 
 /* The planner's glass panel sits on the left under the logo and stops above the map legend
    (bottom left), so the legend stays readable. */
@@ -20,48 +20,4 @@
   background: var(--panel-2);
   color: var(--text-dim);
   font-weight: 500;
-}
-
-/* The printed list exists only while printing, and only shows on paper. */
-.base-print {
-  display: none;
-}
-
-@media print {
-  /* Only the base list goes on paper: not the globe, the logo or the insights panel. */
-  body.printing-bases main,
-  body.printing-bases header {
-    display: none !important;
-  }
-
-  body.printing-bases .base-print {
-    display: block;
-    color: var(--text);
-  }
-
-  .base-print > * + * {
-    margin-top: 8px;
-  }
-
-  .base-print-map {
-    margin: 8px 0;
-    break-inside: avoid;
-  }
-
-  .base-print-map img {
-    display: block;
-    width: 100%;
-    height: auto;
-    max-height: 120mm;
-    object-fit: contain;
-  }
-
-  /* The table runs over as many pages as it needs, with its column names on each. */
-  .base-print .bases-table thead {
-    display: table-header-group;
-  }
-
-  .base-print .bases-table tr {
-    break-inside: avoid;
-  }
 }

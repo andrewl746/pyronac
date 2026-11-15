@@ -68,11 +68,11 @@ outline is at the end of this file.
 - **Take the data away.** The hot spots for the area and dates download as a CSV, the calendar as a
   CSV, and the calendar and the comparison chart as PNG images. Printing the page gives a one-page
   briefing.
-- **Plan where fire bases could go.** A "Fire bases" switch in the menu shows the best-coverage
+- **Plan where fire bases could go.** A "Fire bases" button at the top of the map shows the best-coverage
   sites in Canada for small fire bases, chosen from the harmonized record of summer fire near towns.
   25 sites with a 100 km reach are within reach of 77% of that fire since 2003. It tests itself:
   sites chosen from 2003 to 2015 alone reached 67% of the fire near towns of 2016 to 2025, against
-  23% for random sites. The list prints as a PDF with coordinates. These are candidate sites to
+  23% for random sites. The list downloads as a PDF with a map and coordinates. These are candidate sites to
   study, not a forecast: the record knows where fire was, not roads, water or land cover.
 
 ### How it works
@@ -141,7 +141,7 @@ The handoff has its own check on months the ratios were not learned from: for Ja
 ### Tools and languages
 
 Python, DuckDB, pandas, PyArrow, NumPy, SciPy, scikit-learn, FastAPI, uvicorn, pytest, TypeScript,
-React, Vite, MapLibre GL JS, Recharts, Tailwind CSS, d3-scale-chromatic, Zustand, TanStack Query.
+React, Vite, MapLibre GL JS, Recharts, Tailwind CSS, d3-scale-chromatic, Zustand, TanStack Query, jsPDF.
 
 ## Use of AI tools
 
@@ -211,7 +211,7 @@ The yearly country files and the 2026 archive requests mix standard and near-rea
 - Python libraries: DuckDB, FastAPI, uvicorn, NumPy, SciPy, pandas, PyArrow, scikit-learn, httpx,
   python-dotenv, pytest.
 - JavaScript libraries: React, Vite, TypeScript, Tailwind CSS, Recharts, d3-scale-chromatic (inferno
-  and cividis ramps), Zustand, TanStack Query, Oxlint.
+  and cividis ramps), Zustand, TanStack Query, jsPDF and jsPDF-AutoTable (the base list PDF), Oxlint.
 
 This list was compared with `backend/requirements.txt`, `pipeline/requirements.txt` and
 `frontend/package.json` on Saturday afternoon. **TODO (Sam):** compare once more before submitting.

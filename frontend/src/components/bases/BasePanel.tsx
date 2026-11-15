@@ -7,11 +7,10 @@
 // Off by default; with it off, only the button is added and nothing is loaded.
 import { useId, useState } from "react";
 import { Segmented } from "../controls/Segmented";
-import { BasePrint } from "./BasePrint";
 import { BaseTable } from "./BaseTable";
 import "./bases.css";
 import { reachResult, shownCount, useBaseSites } from "./data";
-import { printBaseList } from "./print";
+import { downloadBaseList } from "./pdf";
 import { coveredSentence, earlySentence, limitsNote, peopleSentence, selftestSentence } from "./sentences";
 import { MIN_BASES, useBases } from "./store";
 import type { Reach } from "./types";
@@ -34,8 +33,6 @@ export function BasePanel() {
   const on = useBases((s) => s.on);
   const count = useBases((s) => s.count);
   const reach = useBases((s) => s.reach);
-  const printing = useBases((s) => s.printing);
-  const mapImage = useBases((s) => s.mapImage);
   const setOn = useBases((s) => s.setOn);
   const setCount = useBases((s) => s.setCount);
   const setReach = useBases((s) => s.setReach);
@@ -57,11 +54,11 @@ export function BasePanel() {
     if (length !== undefined && count > length) setCount(length);
   }
 
-  async function print() {
-    if (!result) return;
+  async function download() {
+    if (!data || !result) return;
     setPreparing(true);
     try {
-      await printBaseList(sites, result.reach_km);
+      await downloadBaseList(data, result, n);
     } finally {
       setPreparing(false);
     }
@@ -123,8 +120,8 @@ export function BasePanel() {
         <div className="flex flex-col gap-3">
           <p className="m-0 text-[11px] text-[var(--text-faint)]">{limitsNote(data)}</p>
           <div>
-            <button type="button" onClick={() => void print()} disabled={preparing} className="btn">
-              {preparing ? "Preparing the base list…" : "Print base list (PDF)"}
+            <button type="button" onClick={() => void download()} disabled={preparing} className="btn">
+              {preparing ? "Making the PDF…" : "Download base list (PDF)"}
             </button>
           </div>
         </div>
@@ -153,7 +150,6 @@ export function BasePanel() {
         </div>
         <div className="sheet-sections min-h-0 flex-1 overflow-y-auto px-5 pb-5">{body}</div>
       </section>
-      {printing && data && result && <BasePrint data={data} result={result} count={n} mapImage={mapImage} />}
     </>
   );
 }
