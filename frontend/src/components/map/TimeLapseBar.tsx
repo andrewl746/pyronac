@@ -42,7 +42,7 @@ export default function TimeLapseBar({ timeLapse, enabled }: Props) {
     <div
       role="group"
       aria-label="Time-lapse"
-      className="map-panel absolute bottom-8 left-1/2 z-10 w-[min(520px,calc(100%-560px))] min-w-[360px] -translate-x-1/2 py-1.5 pr-5 pl-1.5 text-xs"
+      className="map-panel absolute bottom-8 left-1/2 z-10 w-[min(520px,calc(100%-560px))] min-w-[360px] -translate-x-1/2 rounded-[4px] py-1.5 pr-5 pl-1.5 text-xs"
     >
       <div className="flex items-center gap-3">
         <button
@@ -51,7 +51,7 @@ export default function TimeLapseBar({ timeLapse, enabled }: Props) {
           disabled={!busy && (!enabled || n === 0)}
           title={enabled ? undefined : "Switch to Hot spots to play the time-lapse"}
           aria-label={phase === "playing" ? "Pause" : phase === "loading" ? "Stop" : "Play the time-lapse"}
-          className={`flex h-8 w-8 shrink-0 items-center justify-center text-[var(--text)] transition-colors disabled:opacity-40 ${
+          className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-[4px] text-[var(--text)] transition-colors disabled:opacity-40 ${
             busy ? "bg-[var(--glass-active)]" : "bg-[var(--glass-hover)] hover:bg-[var(--glass-active)]"
           }`}
         >

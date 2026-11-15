@@ -57,7 +57,7 @@ export function CompareChart({ rows, median, band, rowLabel }: Props) {
             if (!row) return null;
             return (
               <div
-                className="border px-2 py-1 text-xs"
+                className="rounded-[4px] border px-2 py-1 text-xs"
                 style={{ background: "var(--panel-2)", borderColor: "var(--border-strong)", color: "var(--text)" }}
               >
                 <div className="font-medium">
