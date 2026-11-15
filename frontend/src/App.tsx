@@ -43,7 +43,14 @@ export default function App() {
       </main>
       <header className="pointer-events-none fixed top-5 left-6 z-30 flex h-9 items-center gap-3">
         <h1 className="m-0">
-          <Logo />
+          {/* Back to the opening screen. A plain reload, so the map, the view and the planner all start over. */}
+          <a
+            href={import.meta.env.BASE_URL}
+            aria-label="Pyronac, a fire record to plan with: back to the opening screen"
+            className="pointer-events-auto block rounded-[4px] text-inherit no-underline"
+          >
+            <Logo />
+          </a>
         </h1>
         {meta.data?.data_source === "fixtures" && (
           <span
