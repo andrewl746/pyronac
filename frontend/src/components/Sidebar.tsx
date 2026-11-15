@@ -60,7 +60,7 @@ export default function Sidebar() {
           <ComparePanel />
           {meta.data && (
             <div className="print-only">
-              <MethodNote harmonization={meta.data.harmonization} />
+              <MethodNote harmonization={meta.data.harmonization} eras={meta.data.eras} lastMonth={meta.data.last_month} />
             </div>
           )}
         </div>
