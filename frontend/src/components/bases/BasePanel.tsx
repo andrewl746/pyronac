@@ -1,5 +1,5 @@
-// The base planner: best-coverage sites in Canada for small fire bases (recon drones and a
-// helicopter crew), worked out once in Python (pipeline/base_sites.py) and shipped as
+// The base planner: best-coverage sites in Canada for small fire bases (recon drones,
+// firefighting drones and a helicopter crew), worked out once in Python (pipeline/base_sites.py) and shipped as
 // base_sites.json. Two parts in the night-globe layout:
 // - BasesTopButton: a "Fire bases" button in the bar at the top of the map, which switches it on;
 // - BasePanel: the planner's own glass panel on the left of the globe, shown while the button is on.
@@ -151,9 +151,9 @@ export function BasePanel() {
         <div className="sheet-sections min-h-0 flex-1 overflow-y-auto px-5 pb-5">
           {/* What a base is, in general terms. No ranges or speeds: we have no source for them. */}
           <p className="m-0 text-[12px] text-[var(--text-dim)]">
-            A base is a small station with recon drones carrying infrared cameras and a helicopter crew. The drones
-            spot new fires early and the crew flies out to them. Reach is how far from the base that crew is expected
-            to respond.
+            A base is a small station with recon drones carrying infrared cameras, firefighting drones and a
+            helicopter crew. The recon drones spot new fires early, the firefighting drones take on the small ones,
+            and the crew flies out to the rest. Reach is how far from the base that crew is expected to respond.
           </p>
           {body}
         </div>
