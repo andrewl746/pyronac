@@ -1,0 +1,98 @@
+/* The base planner's own rules. theme.css is left as it is: its print rules still give the
+   usual briefing, and these only take over while "Print base list (PDF)" is printing. */
+
+/* The planner's glass panel sits on the left under the logo and stops above the map legend
+   (bottom left), so the legend stays readable. */
+.bases-panel {
+  max-height: calc(100vh - 72px - 250px);
+  min-height: 180px;
+}
+
+/* The on/off switch inside a .btn. */
+.bases-switch-track {
+  position: relative;
+  display: inline-block;
+  width: 24px;
+  height: 14px;
+  border-radius: 999px;
+  background: var(--glass-active);
+  transition: background-color 120ms;
+}
+
+.bases-switch-track[data-on="true"] {
+  background: var(--accent);
+}
+
+.bases-switch-knob {
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 10px;
+  height: 10px;
+  border-radius: 999px;
+  background: var(--text-dim);
+  transition: left 120ms, background-color 120ms;
+}
+
+.bases-switch-track[data-on="true"] .bases-switch-knob {
+  left: 12px;
+  background: var(--bg);
+}
+
+.bases-slider {
+  accent-color: var(--accent);
+  cursor: pointer;
+}
+
+/* The column names stay in view while the panel scrolls. */
+.bases-table.is-compact thead th {
+  position: sticky;
+  top: 0;
+  background: var(--panel-2);
+  color: var(--text-dim);
+  font-weight: 500;
+}
+
+/* The printed list exists only while printing, and only shows on paper. */
+.base-print {
+  display: none;
+}
+
+@media print {
+  /* Only the base list goes on paper: not the globe, the logo or the insights panel. */
+  body.printing-bases main,
+  body.printing-bases header {
+    display: none !important;
+  }
+
+  body.printing-bases .base-print {
+    display: block;
+    color: var(--text);
+  }
+
+  .base-print > * + * {
+    margin-top: 8px;
+  }
+
+  .base-print-map {
+    margin: 8px 0;
+    break-inside: avoid;
+  }
+
+  .base-print-map img {
+    display: block;
+    width: 100%;
+    height: auto;
+    max-height: 120mm;
+    object-fit: contain;
+  }
+
+  /* The table runs over as many pages as it needs, with its column names on each. */
+  .base-print .bases-table thead {
+    display: table-header-group;
+  }
+
+  .base-print .bases-table tr {
+    break-inside: avoid;
+  }
+}

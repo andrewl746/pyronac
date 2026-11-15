@@ -6,6 +6,7 @@ import { useAnomaly, useGrid, useMeta } from "../../api/hooks";
 import type { Bbox } from "../../api/types";
 import { snapBbox, WORLD, WORLD_STEP } from "../../lib/geo";
 import { useStore } from "../../state/store";
+import { useBaseLayer } from "../bases/layer";
 import { BASEMAP, FIRST_LABEL_LAYER } from "./basemap";
 import { formatCount, formatMonthYear } from "../../lib/format";
 import { addAnomalyLayer, ANOMALY_CLASSES, ANOMALY_LAYER, ANOMALY_LAYER_IDS, ordinal, sentenceCase, setAnomalyData } from "./anomaly";
@@ -134,6 +135,9 @@ export default function MapView() {
       instance.remove();
     };
   }, []);
+
+  // The base planner's markers and reach circles (components/bases). Adds nothing until switched on.
+  useBaseLayer(map);
 
   // Draw the fire cells whenever new grid data arrives.
   useEffect(() => {

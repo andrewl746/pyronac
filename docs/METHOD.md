@@ -369,6 +369,67 @@ In the 2026 data the filter removes 26,733 of the served detections. Suomi NPP's
 September and 18% in October in Canada, by 56%, 68% and 45% in August, September and October in India,
 and by about 1% in Brazil.
 
+## The base planner
+
+The map can show the best-coverage sites in Canada for small fire bases, worked out once by
+`pipeline/base_sites.py`. It is an example of what a consistent record is for, not a forecast.
+
+The rule:
+
+- A base reaches every 0.1 degree cell whose centre is within its reach: 50 or 100 km.
+- A cell counts its harmonized hot spots of June to August, 2003 to 2025, and only if it is within
+  50 km of a town of 500 or more people (GeoNames cities500, 2,052 Canadian places). All towns count
+  the same. About 19% of Canada's summer hot spots are near a town.
+- Each new base goes on the fire cell that reaches the most hot spots no earlier base reaches.
+- The list stops when the next base would add under 0.3%, and no city of 100,000 or more people gets
+  more than 3 bases within reach.
+
+The self-test: choose the sites from 2003 to 2015 only, then count how much of the fire near towns
+of 2016 to 2025 was within reach. "Chance" is the same number of random fire sites near towns, the
+mean of 200 draws.
+
+| Reach 100 km | Within reach, 2003 to 2025 | Self-test | Chance |
+|---|---|---|---|
+| 10 bases | 51% | 39% | 10% |
+| 25 bases | 77% | 67% | 23% |
+| 50 bases | 92% | 76% | 40% |
+
+At 50 km, 65 bases reach 84% (self-test 59%, chance 21%). The first sites at 100 km are near
+Kamloops, Houston, Flin Flon, Garden Creek, Yellowknife, Williams Lake, Kelowna and Hay River.
+
+What we tried and dropped, in one-off tests:
+
+- Counting all fire, near a town or not. The sites sat in empty forest, and 25 of them reached 24% of
+  the later fire near towns, about the same as chance.
+- Counting bigger towns more. About 10 of 50 sites landed at big cities such as Winnipeg, Edmonton,
+  Toronto and Montréal, where the hot spots are farm burning and industry.
+- A 15 km reach, a small drone's. 100 bases reached 2.4% of later fire.
+- A 150 km reach. Ten of its 39 sites had a city of 100,000 or more people within reach, Toronto,
+  Calgary and Edmonton among them, because a circle that wide reaches a city from most of the south.
+
+What harmonizing changes here:
+
+- Not where the sites go. In a one-off test on all fire, 25 sites chosen from the harmonized, raw and
+  VIIRS-only records reached 33%, 35% and 34% of later fire.
+- How much fire to plan for. Canada's 2003 to 2011 total is 332,347 hot spots raw and 1,531,789
+  harmonized. Within reach of the first site, near Kamloops, a summer from 2003 to 2011 averaged 376
+  hot spots raw and 1,760 harmonized.
+
+Limits of the planner:
+
+- These are candidate sites to study. The record knows where fire was. It does not know roads, water,
+  land cover, or which remote fires agencies leave to burn.
+- Three of the 50 sites at 100 km are in the prairie farm belt (Winnipeg, Yorkton, Estevan). Within
+  their reach 74 to 84% of the year's hot spots fall in April, May, September and October, the farm
+  burning months, and no summer stands out. A fourth, near Melfort, is mixed: 70% of its hot spots
+  fall in those months, but over half of its summer fire came in one year, 2021.
+- Towns under 500 people are not in the list, so a village such as Lytton does not count.
+- Only June to August is counted, so May fires are left out.
+- Positions are good to about 11 km, the size of a cell.
+
+To rebuild `frontend/src/components/bases/base_sites.json`, put GeoNames `cities500.zip` in
+`data/raw/geonames/` and run `python pipeline/base_sites.py --towns data/raw/geonames/cities500.zip`.
+
 ## Limits
 
 - A single month in a single region can still be well off. The typical 5 degree region and year is
