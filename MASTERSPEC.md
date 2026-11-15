@@ -252,6 +252,7 @@ pipeline/
   download.py            Yuvi
   validate.py            Andrew L
   ml_model.py            Andrew L
+  base_sites.py          Andrew L (section 13, extra 11), with test_base_sites.py
 backend/
   requirements.txt
   pytest.ini             Appendix A
@@ -295,12 +296,13 @@ frontend/
     components/compare/                                               Sam
     components/downloads/                                             Sam
     components/trend/, components/summary/                            Yuvi (after the data is done)
+    components/bases/                                                 Andrew L (section 13, extra 11)
 ```
 
 | Person | Owns |
 |---|---|
 | Yuvi | `pipeline/` except `harmonize.py`, `validate.py`, `ml_model.py`. `data/fixtures/`. `docs/DATA_NOTES.md`. Root files (`README.md`, `.gitignore`, `.env.example`, `CLAUDE.md`). Later `frontend/src/components/trend/` and `summary/`. |
-| Andrew L | `pipeline/harmonize.py`, `pipeline/validate.py`, `pipeline/ml_model.py`, `docs/METHOD.md`. Runs the checkpoint checks in section 12. |
+| Andrew L | `pipeline/harmonize.py`, `pipeline/validate.py`, `pipeline/ml_model.py`, `pipeline/base_sites.py`, `pipeline/test_base_sites.py`, `frontend/src/components/bases/`, `docs/METHOD.md`. Runs the checkpoint checks in section 12. |
 | Angela | `backend/` except the files listed for Andrew N. |
 | Andrew N | `backend/app/routers/compare.py`, `trend.py`, `anomaly.py`, `backend/app/analysis/`, and their tests. |
 | Vlad | `frontend/` scaffold and config, `src/main.tsx`, `src/App.tsx`, `src/api/`, `src/state/`, `src/lib/geo.ts`, `src/components/map/`, `src/components/region/`. |
@@ -1126,6 +1128,7 @@ Start these only when your own part passes its checks. Take them in this order a
 8. **Fire regime map** (Andrew L). Cluster cells by the shape of their fire year with k-means and colour the map by cluster.
 9. **Time-lapse** (Vlad). A Play button on the map steps through every month from January of `startYear` to December of `endYear`, stopping at `last_month`, about four months a second. Each step calls `setSelected`, so the map, the calendar's outlined cell and the compare panel all follow. A strip under the map shows the months of that range with the three eras shaded and a marker at each handoff (February 2012 and November 2026), labelled from `useMeta().eras`. Dragging its handle scrubs month by month, and the current month is written beside it, for example "July 2023". Before the first frame it loads every month of the range through the same query as `useGrid`, showing progress, and fixes the hatch scale to the largest single-month cell value in the range, so a quiet month never looks as fierce as a big one. Pause, a click in the calendar, a new box or the end of the range stops it and leaves the last month selected. It starts only when the user presses Play, works by keyboard, and steps once a second under `prefers-reduced-motion`. It uses only existing endpoints and changes no contract. Files in `frontend/src/components/map/`. Meant as a shot for the demo video.
 10. **Deploy.** Frontend on a static host, backend on a small server with the grid and Canada's points. Only after the feature freeze, and only if the local demo is solid.
+11. **Base planner** (Andrew L). Added on Saturday night after a judge asked us to show impact. A "Fire bases" switch in the menu shows the best-coverage sites in Canada for small fire bases. The sites are worked out once by `pipeline/base_sites.py`, from the harmonized hot spots of June to August within 50 km of a town of 500 or more people (GeoNames), and shipped as `frontend/src/components/bases/base_sites.json`. The panel gives the number of bases, a reach of 50 or 100 km, a self-test (sites chosen from 2003 to 2015, scored on 2016 to 2025, next to chance), a table of the sites and a printable list. It is off by default, uses no endpoint and changes no contract. Files in `frontend/src/components/bases/`, with hooks of three lines each in `Menu.tsx` and `MapView.tsx`. It chooses sites from the record and tests them on later years. It is not a forecast, which stays out of scope, and the sites are candidates to study: the record does not know roads, water or land cover. The method is in `docs/METHOD.md`.
 
 Not on the list and not to be built: fire forecasting, smoke or weather layers, real alerts, deep learning on images, polygon drawing.
 

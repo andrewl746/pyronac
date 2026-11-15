@@ -68,6 +68,12 @@ outline is at the end of this file.
 - **Take the data away.** The hot spots for the area and dates download as a CSV, the calendar as a
   CSV, and the calendar and the comparison chart as PNG images. Printing the page gives a one-page
   briefing.
+- **Plan where fire bases could go.** A "Fire bases" switch in the menu shows the best-coverage
+  sites in Canada for small fire bases, chosen from the harmonized record of summer fire near towns.
+  25 sites with a 100 km reach are within reach of 77% of that fire since 2003. It tests itself:
+  sites chosen from 2003 to 2015 alone reached 67% of the fire near towns of 2016 to 2025, against
+  23% for random sites. The list prints as a PDF with coordinates. These are candidate sites to
+  study, not a forecast: the record knows where fire was, not roads, water or land cover.
 
 ### How it works
 
@@ -201,6 +207,8 @@ The yearly country files and the 2026 archive requests mix standard and near-rea
   Sentinel data 2024), https://s2maps.eu, licence CC BY-NC-SA 4.0. Borders and labels: OpenFreeMap,
   © OpenMapTiles, data from OpenStreetMap. **TODO (Vlad):** confirm this is still the base map in
   the final build.
+- Town list for the base planner: GeoNames `cities500` (places with 500 or more people),
+  https://www.geonames.org, licence CC BY 4.0.
 - Python libraries: DuckDB, FastAPI, uvicorn, NumPy, SciPy, pandas, PyArrow, scikit-learn, httpx,
   python-dotenv, pytest.
 - JavaScript libraries: React, Vite, TypeScript, Tailwind CSS, Recharts, d3-scale-chromatic (inferno
