@@ -1,11 +1,9 @@
 # Submission text: Pyronac, the fire almanac
 
-Draft by Sam, Saturday 14 November 2026, updated Saturday afternoon after the full data build was
-published. Every field on the Space Apps project page is below (MASTERSPEC.md section 14). Lines
-marked **TODO** still need a person. Numbers come from `docs/METHOD.md` (as of Saturday afternoon, after
-the method was chosen per country), `docs/DATA_NOTES.md` and the app running on the published build
-(data through 14 November 2026). Check them again before
-submitting, because the method and the data can still change.
+Draft by Sam, Saturday 14 November 2026. Numbers were read again on Saturday at 17:20 from the final
+data release (`data-3-countries-2003-2026-final-20261114`), `docs/METHOD.md` as written for that
+release, and the app running on it. Every field on the Space Apps project page is below
+(MASTERSPEC.md section 14). Lines marked **TODO** still need a person.
 
 Everyone on the team reads the final text before it is submitted.
 
@@ -21,7 +19,7 @@ as reported, Canada's fire record jumps about fivefold between 2011 and 2012 alt
 on the ground. Pyronac harmonizes the two records into one, on the scale of VIIRS on Suomi NPP, and
 shows it as a calendar of burning activity from 2003 to this month for any area the user picks on a
 globe, in Canada, India and Brazil. On six years the method never saw, the typical error of a
-monthly total falls from about 78% for raw MODIS to about 10% after harmonization. An
+monthly total falls from about 78% for raw MODIS to about 9% after harmonization. An
 emergency manager can ask "is this October unusual here?" and get an answer that does not depend on
 which satellite was flying.
 
@@ -50,32 +48,31 @@ outline is at the end of this file.
   years from 2012 on look several times busier than the years before, because of the sensor change.
   In harmonized mode that false jump is gone.
 - **Compare a month with its history.** A panel puts any month beside the same calendar month in
-  every other year: the median, the usual range, the rank, and a sentence such as "July 2023 was
-  1,220% above the usual July here" for the Northwest Territories.
+  every other year, with the median and the usual range, and a sentence such as "July 2023 was
+  1,341% above the usual July here" for the Northwest Territories. With no month picked it shows
+  each year's total.
 - **Follow the second handoff.** Suomi NPP stopped delivering data on 2 November 2026. From November
   2026 the record continues on NOAA-20, scaled by a ratio measured while both satellites flew. The
-  calendar marks the handoff with a line and a label.
-- **See the trend, raw against harmonized.** A chart of yearly totals with a fitted trend for each
-  record, and a few plain sentences built from the numbers by a fixed template. The raw record
-  overstates the rise. For all of Canada, 2003 to 2025, both records rise, the raw one by about
-  129% a decade and the harmonized one by about 82%. **TODO (Sam):** read these two numbers again
-  from the trend panel on the final data build. They were read on the build from before the method
-  was chosen per country, and the harmonized one will have moved. On that earlier build the southern
-  Amazon box showed the raw record rising while the harmonized one fell; check whether that still
-  holds before saying it.
-- **See whether the fire season is moving.** Under the trend chart, one sentence and a small chart
-  of the centre of the fire season in each year, with the shift in days per decade when there is a
-  clear one.
+  calendar marks the handoff with a line and a label, and the method note says it in words.
+- **See the trend, raw against harmonized.** A "Trend" view on the map colours each cell by how its
+  yearly count has changed, and its legend gives the trend for the selected area in both records.
+  The raw record overstates the rise. For all of Canada, 2003 to 2025, both records rise, the raw
+  one by 129% a decade and the harmonized one by 84%. For the southern Amazon box the raw record
+  rises by 48% a decade while the harmonized one falls by 36%.
 - **See what is unusual on the map.** An "Anomaly" view colours each cell by how unusual the selected
   month is against the same calendar month in other years.
-- **Play it as a time-lapse.** A Play button steps through the months on the map.
+- **Pick a month or play a time-lapse.** The map shows the whole period or one month, and a Play
+  button steps through the months.
+- **Know how sure the old numbers are.** Months before February 2012 are estimates. The calendar
+  and the comparison give each one's likely range, from the measured error.
 - **Take the data away.** The hot spots for the area and dates download as a CSV, the calendar as a
-  CSV, and the calendar and the comparison chart as PNG images.
+  CSV, and the calendar and the comparison chart as PNG images. Printing the page gives a one-page
+  briefing.
 
 ### How it works
 
 - **Data.** NASA FIRMS active fire detections for Canada, India and Brazil, 2003 to 14 November
-  2026: MODIS from 2003, VIIRS on Suomi NPP from 2012, VIIRS on NOAA-20 from 2018. That is 42.8
+  2026: MODIS from 2003, VIIRS on Suomi NPP from 2012, VIIRS on NOAA-20 from 2018. That is 42.7
   million detections after dropping low-confidence ones and non-vegetation sources.
 - **Grid.** Detections are counted per month in cells of 0.1 by 0.1 degree. Every number in the app
   is a sum over whole cells, so the map, the calendar, the comparison and the downloads always agree.
@@ -85,9 +82,10 @@ outline is at the end of this file.
   country uses the one that did better on years it never saw: a gradient boosting model for Canada
   (inputs: count, fire radiative power, place, season and neighbouring cells), and for India and
   Brazil a ratio of Suomi NPP to MODIS detections per 1 degree block and calendar month. From
-  November 2026 the record is NOAA-20 times a handoff ratio measured over April
-  2018 to October 2025, when both VIIRS satellites flew. The ratio is close to 1 (Canada 0.997,
-  India 0.987, Brazil 1.011).
+  November 2026 the record is NOAA-20 times a handoff ratio measured over April 2018 to October
+  2025, when both VIIRS satellites flew. The ratio is close to 1 (Canada 1.023, India 0.993, Brazil
+  1.029). On the days Suomi NPP sent almost nothing (170 since April 2018), the record uses NOAA-20
+  times that ratio in the same way.
 - **App.** A Python pipeline with DuckDB writes Parquet tables. A FastAPI server reads them. The
   frontend is React and TypeScript with a MapLibre globe.
 
@@ -99,21 +97,22 @@ absolute percentage error: 10% means the typical total is 10% away from the obse
 
 | Tested on 2020 to 2025 | Monthly totals | Yearly totals |
 |---|---|---|
-| Raw MODIS, nothing done, all three countries | 77.7% | |
-| What the app ships, all three countries | 9.6% | 1.9% |
-| Canada (model) | 14.0% | 1.4% |
-| India (ratio method) | 9.7% | 1.5% |
-| Brazil (ratio method) | 6.3% | 3.8% |
+| Raw MODIS, nothing done, all three countries | 78.5% | |
+| What the app ships, all three countries | 9.2% | 2.6% |
+| Canada (model) | 14.8% | 1.3% |
+| India (ratio method) | 10.0% | 2.5% |
+| Brazil (ratio method) | 5.2% | 5.3% |
 
 A model replaces the ratio method for a country only if it is lower on monthly, yearly and regional
 totals on the test years. That rule was fixed before each test. Only Canada's model passed.
 
-The weakest points: Canada in 2024 (the estimate is 16.0% above what Suomi NPP observed) and Brazil
-in 2025 (11.1% above). A single month in a single region can be further off than these country
-totals.
+The weakest points: Canada's monthly totals, which are 14.8% off in a typical month, and Brazil in
+2025, where the yearly estimate is 10.5% above what Suomi NPP observed. A single month in a single
+region can be further off than these country totals.
 
-**TODO (Andrew L):** confirm this section against `docs/METHOD.md` once the data build is final. The
-published build from before the per-country choice shows 10.6% in the app's method note, not 9.6%.
+The handoff has its own check on months the ratios were not learned from: for January to October
+2026, NOAA-20 times the handoff ratio is a median 2.8% away from what Suomi NPP observed in Brazil,
+3.7% in Canada and 2.4% in India.
 
 ### Benefits
 
@@ -232,7 +231,7 @@ AI-generated images.
 3. **The fix.** The same calendar in Harmonized mode, on the scale of VIIRS on Suomi NPP. The false
    jump is gone. Picture: Raw and Harmonized side by side.
 4. **Does it work?** Learned on 2012 to 2019, tested on 2020 to 2025: the typical error of a monthly
-   total falls from about 78% to about 10%, across three countries. Picture: the validation table.
+   total falls from about 78% to about 9%, across three countries. Picture: the validation table.
 5. **Is this month unusual?** The compare panel: a month against the same month in every other year,
    in one sentence. Picture: July 2023 for the Northwest Territories.
 6. **The record carries on.** Suomi NPP stopped delivering data on 2 November 2026. The record
@@ -241,4 +240,4 @@ AI-generated images.
 7. **Use it.** Canada, India and Brazil. CSV and PNG downloads, colour ramps safe for colour vision
    deficiency, keyboard access. NASA FIRMS data, the team, the repository link.
 
-**TODO (Sam, Andrew L):** take the screenshots once the data build is final.
+**TODO (Sam, Andrew L):** take the screenshots on the final data release.
