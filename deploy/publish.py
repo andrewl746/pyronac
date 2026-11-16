@@ -1,4 +1,4 @@
-"""Put Pyronac live on Fly.io, on one small server that never sleeps (about $7 a month).
+"""Put Pyronac live on Fly.io, on one small server that is suspended while nobody is visiting.
 
 Once, in your own terminal: install flyctl (https://fly.io/docs/flyctl/install/) and run
     fly auth login
