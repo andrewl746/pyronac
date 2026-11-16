@@ -1,6 +1,6 @@
 // The selected box on the map, and the rectangle the user drags in draw mode.
 import type { Feature, FeatureCollection, Polygon } from "geojson";
-import type { GeoJSONSource, LngLat, Map as MapLibreMap, MapMouseEvent, Point } from "maplibre-gl";
+import type { GeoJSONSource, LngLat, Map as MapLibreMap, MapMouseEvent, MapTouchEvent, Point } from "maplibre-gl";
 import { useEffect, useState } from "react";
 import type { Bbox } from "../../api/types";
 import { crossesDateLine, dragBox } from "../../lib/geo";
@@ -125,7 +125,8 @@ export function setSelectedBox(map: MapLibreMap, bbox: Bbox | null): void {
 export const DATE_LINE_PROBLEM = "A box can't cross the 180° line. Draw it on one side of the line.";
 
 // Draw mode: panning is off and the cursor is a crosshair. Press, drag and release makes a box
-// and calls onDone with it (not yet snapped). Escape calls onCancel.
+// and calls onDone with it (not yet snapped). Escape calls onCancel. On a touch screen one finger
+// draws the box the same way, and two fingers still zoom the map.
 // A box across the 180° line is refused (issue #10): draw mode stays on and the hook returns a
 // message to show, until the next press or until draw mode turns off.
 // onDone and onCancel must be stable (useCallback), or the mode restarts on every render.
@@ -154,6 +155,10 @@ export function useDrawBox(
     map.dragRotate.disable();
     map.doubleClickZoom.disable();
     canvas.style.cursor = "crosshair";
+    // With panning off, MapLibre hands one-finger drags back to the browser, which would end the
+    // touch as soon as it moved. Keep them for the box.
+    const touchTargets = [map.getCanvasContainer(), canvas];
+    for (const el of touchTargets) el.style.touchAction = "none";
 
     const down = map.on("mousedown", (e: MapMouseEvent) => {
       if (e.originalEvent.button !== 0) return;
@@ -179,6 +184,24 @@ export function useDrawBox(
       else onDone(box);
     };
     const up = map.on("mouseup", finish);
+    const drop = () => {
+      start = null;
+      preview?.setData(EMPTY);
+    };
+    const touchStart = map.on("touchstart", (e: MapTouchEvent) => {
+      // A second finger means a pinch: drop the box and let the map zoom.
+      if (e.points.length !== 1) return drop();
+      start = { lngLat: e.lngLat.wrap(), point: e.point };
+      last = start;
+      setProblem(null);
+    });
+    const touchMove = map.on("touchmove", (e: MapTouchEvent) => {
+      if (!start || e.points.length !== 1) return;
+      last = { lngLat: e.lngLat.wrap(), point: e.point };
+      preview?.setData(boxPolygon(dragBox(start.lngLat, last.lngLat)));
+    });
+    const touchEnd = map.on("touchend", finish);
+    const touchCancel = map.on("touchcancel", drop);
     const onKey = (e: KeyboardEvent) => {
       if (e.key === "Escape") onCancel();
     };
@@ -190,12 +213,17 @@ export function useDrawBox(
       down.unsubscribe();
       move.unsubscribe();
       up.unsubscribe();
+      touchStart.unsubscribe();
+      touchMove.unsubscribe();
+      touchEnd.unsubscribe();
+      touchCancel.unsubscribe();
       window.removeEventListener("mouseup", finish);
       window.removeEventListener("keydown", onKey);
       map.dragPan.enable();
       map.dragRotate.enable();
       map.doubleClickZoom.enable();
       canvas.style.cursor = "";
+      for (const el of touchTargets) el.style.touchAction = "";
       preview?.setData(EMPTY);
     };
   }, [map, active, onDone, onCancel]);

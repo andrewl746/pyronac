@@ -17,7 +17,7 @@ export function Segmented<T extends string>({ label, describedBy, options, value
       role="group"
       aria-label={label}
       aria-describedby={describedBy}
-      className="inline-flex h-[30px] overflow-hidden rounded-[4px] p-[3px]"
+      className="segmented inline-flex h-[30px] overflow-hidden rounded-[4px] p-[3px]"
       style={{ background: "rgba(255, 255, 255, 0.05)" }}
     >
       {options.map((option) => {

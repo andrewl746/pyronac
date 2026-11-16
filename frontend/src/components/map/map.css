@@ -47,13 +47,8 @@
   color: var(--text);
 }
 
-/* The legends: bottom left, above the attribution line. */
+/* The legends: bottom left, above the attribution line (layout.css says where). */
 .map-legend {
-  position: absolute;
-  left: 20px;
-  bottom: 32px;
-  z-index: 10;
-  width: 236px;
   padding: 12px 14px;
   font-size: 12px;
 }
@@ -82,9 +77,12 @@
   transition: color 120ms, background-color 120ms;
 }
 
-.map-btn:hover:not(:disabled) {
-  color: var(--text);
-  background: var(--glass-hover);
+/* Hover looks are for a mouse only: on a touch screen they would stay on the last button tapped. */
+@media (hover: hover) {
+  .map-btn:hover:not(:disabled) {
+    color: var(--text);
+    background: var(--glass-hover);
+  }
 }
 
 .map-btn[aria-pressed="true"],
@@ -113,9 +111,11 @@
   cursor: pointer;
 }
 
-.menu-item:hover {
-  color: var(--text);
-  background: var(--glass-hover);
+@media (hover: hover) {
+  .menu-item:hover {
+    color: var(--text);
+    background: var(--glass-hover);
+  }
 }
 
 .menu-item[aria-pressed="true"] {
@@ -123,12 +123,7 @@
   background: var(--glass-active);
 }
 
-/* The attribution: one quiet line along the bottom right, always visible. */
-.pyronac-map .maplibregl-ctrl-bottom-right {
-  right: 0;
-  bottom: 0;
-}
-
+/* The attribution: one quiet line along the bottom right, always visible (layout.css says where). */
 .pyronac-map .maplibregl-ctrl-attrib,
 .pyronac-map .maplibregl-ctrl-attrib.maplibregl-compact {
   margin: 0;
@@ -233,4 +228,40 @@
 .pyronac-timeline:disabled {
   cursor: default;
   opacity: 0.5;
+}
+
+/* Touch screens: taller buttons and list rows, and a timeline handle a finger can take hold of. */
+@media (pointer: coarse) {
+  /* With the frame around it, a 40px row: --row in layout.css. */
+  .map-btn {
+    height: 32px;
+  }
+
+  .menu-item {
+    height: 44px;
+  }
+
+  .timelapse-play {
+    width: 40px;
+    height: 40px;
+  }
+
+  .timeline-track {
+    height: 36px;
+  }
+
+  .pyronac-timeline {
+    height: 24px;
+  }
+
+  .pyronac-timeline::-webkit-slider-thumb {
+    width: 20px;
+    height: 20px;
+    margin-top: -9px;
+  }
+
+  .pyronac-timeline::-moz-range-thumb {
+    width: 20px;
+    height: 20px;
+  }
 }

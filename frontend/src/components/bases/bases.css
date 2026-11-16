@@ -1,16 +1,31 @@
 /* The base planner's own rules. The base list is downloaded as a PDF (pdf.ts), so nothing here
    is for printing; theme.css's print rules still give the usual briefing. */
 
-/* The planner's glass panel sits on the left under the logo and stops above the map legend
-   (bottom left), so the legend stays readable. */
-.bases-panel {
-  max-height: calc(100vh - 72px - 250px);
-  min-height: 180px;
-}
+/* Where the planner's glass panel sits is in layout.css, with the rest of the layout. */
 
 .bases-slider {
   accent-color: var(--accent);
   cursor: pointer;
+}
+
+/* In a panel narrower than this (the smallest phones, or a phone on its side) the table's eight
+   columns do not fit: it scrolls sideways there. (Not in a wider one, because inside a sideways
+   scroller the column names no longer stay in view.) */
+.bases-panel {
+  container-type: inline-size;
+}
+
+@container (max-width: 359px) {
+  .bases-table-wrap {
+    overflow-x: auto;
+  }
+}
+
+/* A finger needs more to take hold of. */
+@media (pointer: coarse) {
+  .bases-slider {
+    height: 28px;
+  }
 }
 
 /* The column names stay in view while the panel scrolls. */

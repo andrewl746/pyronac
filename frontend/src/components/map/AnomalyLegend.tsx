@@ -1,3 +1,4 @@
+import { pointVerb } from "../../lib/layout";
 import { ANOMALY_CLASSES, sentenceCase } from "./anomaly";
 
 type Props = {
@@ -47,7 +48,7 @@ export default function AnomalyLegend({ monthLabel, partial, hasBox, loading, fa
             ? "Pick an area on the map to compare."
             : loading
               ? "Loading…"
-              : "Hover a cell for its numbers."}
+              : `${pointVerb()} a cell for its numbers.`}
       </div>
     </div>
   );

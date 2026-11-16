@@ -26,7 +26,7 @@ export function ModeSwitch() {
         aria-labelledby="mode-switch-label"
         aria-describedby={MODE_NOTE_ID}
         onClick={() => setMode(on ? "raw" : "harmonized")}
-        className="relative mt-0.5 h-[22px] w-[38px] shrink-0 cursor-pointer rounded-full transition-colors"
+        className="switch relative mt-0.5 h-[22px] w-[38px] shrink-0 cursor-pointer rounded-full transition-colors"
         style={{ background: on ? "var(--accent)" : "rgba(255, 255, 255, 0.14)" }}
       >
         <span

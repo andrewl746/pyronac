@@ -21,7 +21,7 @@ function Logo() {
       </svg>
       <span className="flex flex-col leading-tight">
         <span className="wordmark">Pyronac</span>
-        <span className="text-[11px] text-[var(--text-dim)]">A fire record to plan with</span>
+        <span className="app-tagline text-[11px] text-[var(--text-dim)]">A fire record to plan with</span>
       </span>
     </span>
   );
@@ -29,9 +29,11 @@ function Logo() {
 
 // The globe fills the window. On top, as glass: the logo (top left), the map tools (top centre,
 // in MapView), the menu (top right), the insights for a selected area (right), and the legend
-// and time-lapse (bottom, in MapView).
+// and time-lapse (bottom, in MapView). layout.css says where each one sits, and how that changes
+// on a phone.
 export default function App() {
   const meta = useMeta();
+  const fixtures = meta.data?.data_source === "fixtures";
 
   return (
     <div className="relative h-full overflow-hidden bg-black">
@@ -41,26 +43,30 @@ export default function App() {
         </section>
         <Sidebar />
       </main>
-      <header className="pointer-events-none fixed top-5 left-6 z-30 flex h-9 items-center gap-3">
+      <header className="app-header pointer-events-none fixed z-30 flex items-center gap-3">
         <h1 className="m-0">
           {/* Back to the opening screen. A plain reload, so the map, the view and the planner all start over. */}
           <a
             href={import.meta.env.BASE_URL}
             aria-label="Pyronac, a fire record to plan with: back to the opening screen"
-            className="pointer-events-auto block rounded-[4px] text-inherit no-underline"
+            className="app-logo pointer-events-auto block rounded-[4px] text-inherit no-underline"
           >
             <Logo />
           </a>
         </h1>
-        {meta.data?.data_source === "fixtures" && (
+        {fixtures && (
           <span
-            className="pointer-events-auto rounded-[4px] border border-[var(--warn)]/50 px-2 py-0.5 text-[11px] text-[var(--warn)]"
+            className="app-note pointer-events-auto rounded-[4px] border border-[var(--warn)]/50 px-2 py-0.5 text-[11px] text-[var(--warn)]"
             title="The backend is serving the small fake fixture data set, not real FIRMS data."
           >
             Test data
           </span>
         )}
-        {meta.isError && <span className="text-[12px] text-[var(--warn)]">Could not reach the server.</span>}
+        {meta.isError && <span className="app-note text-[12px] text-[var(--warn)]">Could not reach the server.</span>}
+        {/* On a phone the region button is next to the logo, so the same note goes under the name, in fewer words. */}
+        {(meta.isError || fixtures) && (
+          <span className="app-note-small">{meta.isError ? "Server unreachable" : "Test data"}</span>
+        )}
       </header>
       <Menu />
       <Intro />

@@ -1,3 +1,4 @@
+import { pointVerb } from "../../lib/layout";
 import { change } from "../trend/sentences";
 import { signedCount, TREND_COLORS, TREND_OPACITY, type TrendMap } from "./trend";
 
@@ -68,7 +69,7 @@ export default function TrendLegend({ trendMap, hasBox }: Props) {
           {change(boxTrend.raw_trend)}.
         </p>
       )}
-      {!status && <div className="mt-2 text-[11px] text-[var(--text-faint)]">Hover a cell for its trend.</div>}
+      {!status && <div className="mt-2 text-[11px] text-[var(--text-faint)]">{pointVerb()} a cell for its trend.</div>}
     </div>
   );
 }

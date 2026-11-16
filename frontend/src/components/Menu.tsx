@@ -38,7 +38,7 @@ export default function Menu() {
         aria-expanded={open}
         aria-controls="menu-drawer"
         onClick={() => setOpen((o) => !o)}
-        className="glass icon-btn no-print fixed top-5 right-5 z-40 h-9! w-9!"
+        className="glass icon-btn menu-button no-print fixed z-40"
       >
         <svg aria-hidden="true" width="14" height="14" viewBox="0 0 14 14">
           {open ? (
@@ -56,7 +56,7 @@ export default function Menu() {
           tabIndex={-1}
           role="dialog"
           aria-label="Settings and downloads"
-          className="glass glass-strong sheet-in no-print fixed top-[68px] right-5 z-30 flex max-h-[calc(100vh-104px)] w-[min(360px,calc(100vw-40px))] flex-col overflow-y-auto p-5 outline-none"
+          className="glass glass-strong sheet-in menu-drawer no-print fixed z-30 flex flex-col overflow-y-auto p-5 outline-none"
         >
           <div className="sheet-sections">
             <section aria-labelledby="counts-heading" className="flex flex-col gap-3">
@@ -71,7 +71,7 @@ export default function Menu() {
               </h2>
               <RampSwitch />
             </section>
-            <section aria-labelledby="years-heading" className="flex items-center justify-between">
+            <section aria-labelledby="years-heading" className="flex flex-wrap items-center justify-between gap-2">
               <h2 id="years-heading" className="label">
                 Years
               </h2>

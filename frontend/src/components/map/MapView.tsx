@@ -5,9 +5,10 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { useAnomaly, useGrid, useMeta } from "../../api/hooks";
 import type { Bbox } from "../../api/types";
 import { snapBbox, WORLD, WORLD_STEP } from "../../lib/geo";
+import { canHover, fitPadding, popupAnchor } from "../../lib/layout";
 import { useStore } from "../../state/store";
 import { BasesTopButton } from "../bases/BasePanel";
-import { useBaseLayer } from "../bases/layer";
+import { baseMarkerAt, useBaseLayer } from "../bases/layer";
 import { BASEMAP, FIRST_LABEL_LAYER } from "./basemap";
 import { formatCount, formatMonthYear } from "../../lib/format";
 import { addAnomalyLayer, ANOMALY_CLASSES, ANOMALY_LAYER, ANOMALY_LAYER_IDS, ordinal, sentenceCase, setAnomalyData } from "./anomaly";
@@ -15,6 +16,7 @@ import AnomalyLegend from "./AnomalyLegend";
 import { addFireLayers, FIRE_LAYER_IDS, LAYER_FILL, setFireData, setFireLatitude, setFireRamp } from "./fire";
 import GlobeRim from "./GlobeRim";
 import { setGlowLatitude } from "./glow";
+import { clearPadding, homeView, minZoom, NO_PADDING } from "./home";
 import RegionPanel from "../region/RegionPanel";
 import { mapPeriod, parseYearMonth, ym } from "./labels";
 import Legend from "./Legend";
@@ -30,9 +32,6 @@ import TrendLegend from "./TrendLegend";
 // After bundling, MapLibre looks for its worker next to the bundle, where it is not (issue #22).
 // Importing it with ?url makes Vite copy it into dist/assets; this points MapLibre at that copy.
 maplibregl.setWorkerUrl(workerUrl);
-
-// The opening view: the globe, centred over Canada.
-const START = { center: [-100, 55] as [number, number], zoom: 1.8 };
 
 // "fire" shows the hot spots (colour ramp). "anomaly" shows how unusual one month is (extra #3).
 // "trend" shows how each cell's yearly count has changed over the full years of the range.
@@ -106,15 +105,22 @@ export default function MapView() {
   useEffect(() => {
     const container = containerRef.current;
     if (!container) return;
+    // The opening view: the whole globe, centred over Canada (home.ts).
     const instance = new maplibregl.Map({
       container,
       style: BASEMAP,
-      center: START.center,
-      zoom: START.zoom,
-      minZoom: 0.5,
+      ...homeView(),
+      minZoom: minZoom(),
       maxZoom: 16,
       attributionControl: { compact: false },
     });
+    // The credits wrap onto more lines in a narrow window. The panels along the bottom sit above
+    // them (--credit in layout.css), so keep their height up to date.
+    const credits = container.querySelector<HTMLElement>(".maplibregl-ctrl-attrib");
+    const creditsObserver = new ResizeObserver(() => {
+      if (credits?.offsetHeight) document.documentElement.style.setProperty("--credit", `${credits.offsetHeight}px`);
+    });
+    if (credits) creditsObserver.observe(credits);
     // No zoom buttons: scroll, pinch and double-click zoom, and the globe stays uncluttered.
     instance.on("style.load", () => {
       instance.setProjection({ type: "globe" });
@@ -132,6 +138,8 @@ export default function MapView() {
       setGlowLatitude(instance, instance.getCenter().lat);
     });
     return () => {
+      creditsObserver.disconnect();
+      document.documentElement.style.removeProperty("--credit");
       setMap(null);
       instance.remove();
     };
@@ -176,16 +184,18 @@ export default function MapView() {
     setSelectedBox(map, bbox);
     const animate = !reducedMotion();
     if (bbox) {
+      clearPadding(map);
       map.fitBounds(
         [
           [bbox.west, bbox.south],
           [bbox.east, bbox.north],
         ],
-        // Extra room keeps the box clear of the insights panel on the right and the time-lapse bar.
-        { padding: { top: 90, right: 460, bottom: 120, left: 80 }, maxZoom: 10, animate, duration: 1400 },
+        // Extra room keeps the box clear of the insights panel (on the right, or on a phone the
+        // sheet along the bottom), the map tools and the time-lapse bar.
+        { padding: fitPadding({ insights: true, bases: false }), maxZoom: 10, animate, duration: 1400 },
       );
     } else if (hadBox.current) {
-      map.flyTo({ center: START.center, zoom: START.zoom, animate, duration: 1400 });
+      map.flyTo({ ...homeView(), padding: NO_PADDING, animate, duration: 1400 });
     }
     hadBox.current = bbox !== null;
   }, [map, bbox]);
@@ -201,8 +211,9 @@ export default function MapView() {
   const cancelDrawing = useCallback(() => setDrawing(false), []);
   const drawProblem = useDrawBox(map, drawing, finishDrawing, cancelDrawing);
 
-  // Hovering a cell shows its exact numbers. Hidden layers get no mouse events, so only the
-  // current view answers.
+  // Hovering a cell shows its exact numbers; on a touch screen, tapping it does, and a tap
+  // anywhere else puts the numbers away. Hidden layers get no events, so only the current view
+  // answers.
   const periodLabel = period.label;
   useEffect(() => {
     if (!map || drawing) return;
@@ -212,18 +223,18 @@ export default function MapView() {
       offset: 14,
       className: "pyronac-popup",
     });
-    const move = map.on("mousemove", LAYER_FILL, (e) => {
+    // A base marker has a pop-up of its own (bases/layer.ts), so the cell under it stays quiet.
+    const show = (e: maplibregl.MapMouseEvent, html: string) => {
+      if (baseMarkerAt(map, e.point)) return popup.remove();
+      popup.options.anchor = popupAnchor(e.point);
+      popup.setLngLat(e.lngLat).setHTML(html).addTo(map);
+    };
+    const fire = (e: maplibregl.MapLayerMouseEvent) => {
       const value: unknown = e.features?.[0]?.properties?.value;
       if (typeof value !== "number") return;
-      popup
-        .setLngLat(e.lngLat)
-        .setHTML(
-          `<strong>${formatCount(value)}</strong> hot spot${value === 1 ? "" : "s"}<br><span>${periodLabel}</span>`,
-        )
-        .addTo(map);
-    });
-    const leave = map.on("mouseleave", LAYER_FILL, () => popup.remove());
-    const anomalyMove = map.on("mousemove", ANOMALY_LAYER, (e) => {
+      show(e, `<strong>${formatCount(value)}</strong> hot spot${value === 1 ? "" : "s"}<br><span>${periodLabel}</span>`);
+    };
+    const anomalyCell = (e: maplibregl.MapLayerMouseEvent) => {
       const properties = e.features?.[0]?.properties;
       const value: unknown = properties?.value;
       const median: unknown = properties?.median;
@@ -231,38 +242,44 @@ export default function MapView() {
       const cls: unknown = properties?.cls;
       if (typeof value !== "number" || typeof median !== "number") return;
       if (typeof percentile !== "number" || typeof cls !== "number") return;
-      popup
-        .setLngLat(e.lngLat)
-        .setHTML(
-          `<strong>${sentenceCase(ANOMALY_CLASSES[cls]?.label ?? "")}</strong><br>` +
-            `${formatCount(value)} hot spot${value === 1 ? "" : "s"} in ${anomalyLabel ?? "this month"}<br>` +
-            `<span>usually ${formatCount(median)} (median) · ${ordinal(percentile)} percentile</span>`,
-        )
-        .addTo(map);
-    });
-    const anomalyLeave = map.on("mouseleave", ANOMALY_LAYER, () => popup.remove());
-    const trendMove = map.on("mousemove", TREND_LAYER, (e) => {
+      show(
+        e,
+        `<strong>${sentenceCase(ANOMALY_CLASSES[cls]?.label ?? "")}</strong><br>` +
+          `${formatCount(value)} hot spot${value === 1 ? "" : "s"} in ${anomalyLabel ?? "this month"}<br>` +
+          `<span>usually ${formatCount(median)} (median) · ${ordinal(percentile)} percentile</span>`,
+      );
+    };
+    const trendCell = (e: maplibregl.MapLayerMouseEvent) => {
       const properties = e.features?.[0]?.properties;
       const slope: unknown = properties?.slope;
       const mean: unknown = properties?.mean;
       if (typeof slope !== "number" || typeof mean !== "number") return;
-      popup
-        .setLngLat(e.lngLat)
-        .setHTML(
-          `<strong>${signedCount(slope)} hot spots a year</strong>, each year<br>` +
-            `${trendYearsLabel}, harmonized<br>` +
-            `<span>about ${formatCount(Math.round(mean * 10) / 10)} a year on average</span>`,
-        )
-        .addTo(map);
-    });
-    const trendLeave = map.on("mouseleave", TREND_LAYER, () => popup.remove());
+      show(
+        e,
+        `<strong>${signedCount(slope)} hot spots a year</strong>, each year<br>` +
+          `${trendYearsLabel}, harmonized<br>` +
+          `<span>about ${formatCount(Math.round(mean * 10) / 10)} a year on average</span>`,
+      );
+    };
+    const layers = [
+      { id: LAYER_FILL, show: fire },
+      { id: ANOMALY_LAYER, show: anomalyCell },
+      { id: TREND_LAYER, show: trendCell },
+    ];
+    const subscriptions = layers.flatMap((layer) => [
+      map.on("mousemove", layer.id, layer.show),
+      map.on("click", layer.id, layer.show),
+      map.on("mouseleave", layer.id, () => popup.remove()),
+    ]);
+    // A tap that lands on no cell.
+    subscriptions.push(
+      map.on("click", (e) => {
+        const ids = layers.map((layer) => layer.id).filter((id) => map.getLayer(id));
+        if (map.queryRenderedFeatures(e.point, { layers: ids }).length === 0) popup.remove();
+      }),
+    );
     return () => {
-      move.unsubscribe();
-      leave.unsubscribe();
-      anomalyMove.unsubscribe();
-      anomalyLeave.unsubscribe();
-      trendMove.unsubscribe();
-      trendLeave.unsubscribe();
+      for (const subscription of subscriptions) subscription.unsubscribe();
       popup.remove();
     };
   }, [map, periodLabel, anomalyLabel, trendYearsLabel, drawing]);
@@ -270,7 +287,7 @@ export default function MapView() {
   const active = anomalyOn ? anomaly : grid;
 
   function showWholeGlobe() {
-    map?.flyTo({ center: START.center, zoom: START.zoom, animate: !reducedMotion(), duration: 1400 });
+    map?.flyTo({ ...homeView(), padding: NO_PADDING, animate: !reducedMotion(), duration: 1400 });
   }
 
   if (mapFailed) {
@@ -283,9 +300,10 @@ export default function MapView() {
 
   return (
     <>
-      {/* The map tools come first so Tab reaches them before the map itself. */}
-      <div className="absolute top-5 left-1/2 z-10 flex -translate-x-1/2 items-center gap-2">
-        <div className="map-panel seg">
+      {/* The map tools come first so Tab reaches them before the map itself. layout.css places
+          them: one row in a wide window, two on a phone. */}
+      <div className="map-toolbar">
+        <div className="map-panel seg toolbar-region">
           <RegionPanel
             drawing={drawing}
             disabled={!map}
@@ -294,35 +312,40 @@ export default function MapView() {
           />
         </div>
         {!drawing && (
-          <div role="group" aria-label="Map view" className="map-panel seg">
-            {(["fire", "anomaly", "trend"] as const).map((v) => (
-              <button
-                key={v}
-                type="button"
-                aria-pressed={view === v}
-                onClick={() => setView(v)}
-                className="map-btn"
-              >
-                {v === "fire" ? "Hot spots" : v === "anomaly" ? "Anomaly" : "Trend"}
-              </button>
-            ))}
+          <div className="toolbar-group">
+            <div role="group" aria-label="Map view" className="map-panel seg toolbar-views">
+              {(["fire", "anomaly", "trend"] as const).map((v) => (
+                <button
+                  key={v}
+                  type="button"
+                  aria-pressed={view === v}
+                  onClick={() => setView(v)}
+                  className="map-btn"
+                >
+                  {v === "fire" ? "Hot spots" : v === "anomaly" ? "Anomaly" : "Trend"}
+                </button>
+              ))}
+            </div>
+            <BasesTopButton />
           </div>
         )}
-        {!drawing && <BasesTopButton />}
       </div>
-      {drawing && (
-        <div
-          role="status"
-          className={`map-panel absolute top-[76px] left-1/2 z-10 -translate-x-1/2 px-4 py-2 text-xs ${drawProblem ? "text-[var(--warn)]" : "text-[var(--text-dim)]"}`}
-        >
-          {drawProblem ?? "Press, drag and release on the globe. Esc cancels."}
-        </div>
-      )}
       <Starfield />
       <GlobeRim map={map} />
       <div ref={containerRef} className="pyronac-map" />
       {/* Below the toolbar so a long message never covers the buttons. */}
-      <div className="pointer-events-none absolute top-[76px] left-1/2 z-10 -translate-x-1/2">
+      <div className="map-status">
+        {drawing && (
+          <div
+            role="status"
+            className={`map-panel px-4 py-2 text-xs ${drawProblem ? "text-[var(--warn)]" : "text-[var(--text-dim)]"}`}
+          >
+            {drawProblem ??
+              (canHover()
+                ? "Press, drag and release on the globe. Esc cancels."
+                : "Drag one finger across the globe to draw the area.")}
+          </div>
+        )}
         {trendOn ? (
           trendMap.error ? (
             <div role="alert" className="map-panel px-3 py-1.5 text-xs text-[var(--text)]">
@@ -367,29 +390,32 @@ export default function MapView() {
           )
         )}
       </div>
-      {trendOn ? (
-        <TrendLegend trendMap={trendMap} hasBox={bbox !== null} />
-      ) : anomalyOn ? (
-        <AnomalyLegend
-          monthLabel={anomalyLabel}
-          partial={anomalyPartial}
-          hasBox={bbox !== null}
-          loading={anomaly.isFetching}
-          failed={anomaly.isError}
-        />
-      ) : (
-        <Legend
-          max={scaleMax ?? grid.data?.max ?? 0}
-          step={grid.data?.step ?? WORLD_STEP}
-          period={period.label}
-          loading={grid.isPending}
-          failed={grid.isError}
-          note={scaleNote}
-        >
-          <MonthPicker />
-        </Legend>
-      )}
-      <TimeLapseBar timeLapse={timeLapse} enabled={fireOn} />
+      {/* The legend and the time-lapse: side by side in a wide window, stacked on a phone. */}
+      <div className="map-bottom">
+        {trendOn ? (
+          <TrendLegend trendMap={trendMap} hasBox={bbox !== null} />
+        ) : anomalyOn ? (
+          <AnomalyLegend
+            monthLabel={anomalyLabel}
+            partial={anomalyPartial}
+            hasBox={bbox !== null}
+            loading={anomaly.isFetching}
+            failed={anomaly.isError}
+          />
+        ) : (
+          <Legend
+            max={scaleMax ?? grid.data?.max ?? 0}
+            step={grid.data?.step ?? WORLD_STEP}
+            period={period.label}
+            loading={grid.isPending}
+            failed={grid.isError}
+            note={scaleNote}
+          >
+            <MonthPicker />
+          </Legend>
+        )}
+        <TimeLapseBar timeLapse={timeLapse} enabled={fireOn} />
+      </div>
     </>
   );
 }

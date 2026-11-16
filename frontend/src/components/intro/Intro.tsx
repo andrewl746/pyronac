@@ -8,6 +8,7 @@ import { useGrid, useMeta } from "../../api/hooks";
 import type { Bbox } from "../../api/types";
 import { formatDate } from "../../lib/format";
 import { useBases } from "../bases/store";
+import { homeView, NO_PADDING } from "../map/home";
 import { hideEmbers, setEmbers, showEmbers } from "./embers";
 import "./intro.css";
 
@@ -27,9 +28,6 @@ const SETTLE_S = 10;
 // After that it sways by this many degrees, once every SWAY_S seconds.
 const SWAY = 2.5;
 const SWAY_S = 80;
-// Where the app's own view starts (START in MapView.tsx).
-const APP_VIEW = { center: [-100, 55] as [number, number], zoom: 1.8, pitch: 0, bearing: 0 };
-const NO_PADDING = { top: 0, right: 0, bottom: 0, left: 0 };
 
 function reducedMotion(): boolean {
   return window.matchMedia("(prefers-reduced-motion: reduce)").matches;
@@ -37,14 +35,19 @@ function reducedMotion(): boolean {
 
 // The words sit on the left of a wide window, so the shot's centre moves right, clear of them.
 // In a narrow window (one column, see intro.css) they sit at the bottom, so it moves up and
-// pulls back a little.
-const ONE_COLUMN_BELOW = 960; // px, the same breakpoint as intro.css
+// pulls back a little. A phone on its side is narrow but too short for one column, so the words
+// stay on the left and the shot takes the right half.
+const ONE_COLUMN_BELOW = 960; // px, the same breakpoints as intro.css
+const SHORT_BELOW = 521;
 function framing() {
-  const width = window.innerWidth;
-  if (width < ONE_COLUMN_BELOW) {
-    return { zoom: SHOT.zoom - 0.9, padding: { ...NO_PADDING, bottom: Math.round(window.innerHeight * 0.45) } };
+  const { innerWidth: width, innerHeight: height } = window;
+  if (width >= ONE_COLUMN_BELOW) {
+    return { zoom: SHOT.zoom, padding: { ...NO_PADDING, left: Math.max(Math.round(width * 0.34), 500) } };
   }
-  return { zoom: SHOT.zoom, padding: { ...NO_PADDING, left: Math.max(Math.round(width * 0.34), 500) } };
+  if (height < SHORT_BELOW && width > height) {
+    return { zoom: SHOT.zoom - 0.9, padding: { ...NO_PADDING, left: Math.round(width * 0.5) } };
+  }
+  return { zoom: SHOT.zoom - 0.9, padding: { ...NO_PADDING, bottom: Math.round(height * 0.45) } };
 }
 
 const easeOut = (x: number) => 1 - (1 - x) ** 3;
@@ -82,13 +85,14 @@ export function Intro() {
   // The camera: one slow settle into the shot, then a sway that is barely there.
   useEffect(() => {
     if (!map || !open) return;
-    const { zoom, padding } = framing();
     if (reducedMotion()) {
-      map.jumpTo({ ...SHOT, zoom, padding });
+      map.jumpTo({ ...SHOT, ...framing() });
       return;
     }
     const start = performance.now();
     const step = (now: number) => {
+      // Asked for on every frame, so turning a phone round reframes the shot.
+      const { zoom, padding } = framing();
       const t = (now - start) / 1000;
       const settled = easeOut(Math.min(1, t / SETTLE_S));
       const sway = SWAY * Math.sin((2 * Math.PI * Math.max(0, t - SETTLE_S)) / SWAY_S);
@@ -119,7 +123,8 @@ export function Intro() {
       m.once("moveend", () => setBasesOn(true));
       m.easeTo({ pitch: 0, bearing: 0, padding: NO_PADDING, animate, duration: 900 });
     } else {
-      m.flyTo({ ...APP_VIEW, padding: NO_PADDING, animate, duration: 2400 });
+      // Where the app's own view starts: the whole globe, level.
+      m.flyTo({ ...homeView(), padding: NO_PADDING, animate, duration: 2400 });
     }
   }
 

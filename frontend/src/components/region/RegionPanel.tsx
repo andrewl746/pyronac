@@ -8,6 +8,7 @@ import { sameBox, usePresetName } from "./presetName";
 // The region panel: presets, four edges with Apply, and Clear. Shown as a glass
 // dropdown over the globe: the presets, Whole globe (clears the box), Draw area, and Custom… which
 // opens the four edges. The inputs always show the current box, including one drawn on the map.
+// layout.css places the list: under the button in a wide window, across the screen on a phone.
 
 type Edge = keyof Bbox;
 type Draft = Record<Edge, string>;
@@ -117,9 +118,9 @@ export default function RegionPanel({ drawing, onDraw, disabled, onWholeGlobe }:
         onClick={() => (drawing ? onDraw() : setOpen((o) => !o))}
         className="map-btn"
       >
-        <span className="text-[var(--text-faint)]">Region</span>
-        <span className="max-w-[180px] truncate text-[var(--text)]">{drawing ? "Cancel drawing" : current}</span>
-        <svg aria-hidden="true" width="10" height="10" viewBox="0 0 10 10" className="text-[var(--text-faint)]">
+        <span className="region-label text-[var(--text-faint)]">Region</span>
+        <span className="region-value truncate text-[var(--text)]">{drawing ? "Cancel drawing" : current}</span>
+        <svg aria-hidden="true" width="10" height="10" viewBox="0 0 10 10" className="shrink-0 text-[var(--text-faint)]">
           <path d="M2 3.5 5 6.5 8 3.5" fill="none" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" />
         </svg>
       </button>
@@ -128,8 +129,7 @@ export default function RegionPanel({ drawing, onDraw, disabled, onWholeGlobe }:
         <section
           id="region-menu"
           aria-label="Region"
-          className="map-panel absolute top-[calc(100%+10px)] left-1/2 z-20 w-[300px] -translate-x-1/2 p-1.5"
-          style={{ background: "var(--glass-bg-strong)" }}
+          className="map-panel region-menu p-1.5"
         >
           <div role="group" aria-label="Preset areas" className="flex flex-col">
             {meta.isPending && <span className="px-3 py-2 text-[12px] text-[var(--text-dim)]">Loading areas…</span>}
@@ -189,9 +189,10 @@ export default function RegionPanel({ drawing, onDraw, disabled, onWholeGlobe }:
                 {FIELDS.map(({ edge, label, min, max }) => (
                   <label key={edge} className="flex min-w-0 flex-col gap-1 text-[10.5px] text-[var(--text-dim)]">
                     {label} <span className="sr-only">edge in degrees</span>
+                    {/* No inputMode="decimal": on an iPhone that keypad has no minus sign, and every
+                        longitude west of Greenwich needs one. */}
                     <input
                       type="number"
-                      inputMode="decimal"
                       step={0.1}
                       min={min}
                       max={max}

@@ -40,7 +40,7 @@ export default function MonthPicker() {
   };
 
   return (
-    <div className="mb-2 flex items-center gap-1.5 text-[11px]">
+    <div className="mb-2 flex flex-wrap items-center gap-1.5 text-[11px]">
       <span className="mr-0.5 text-[var(--text-dim)]">Showing</span>
       <label>
         <span className="sr-only">Month shown on the map</span>

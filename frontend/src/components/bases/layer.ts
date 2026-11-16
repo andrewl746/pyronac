@@ -4,8 +4,10 @@
 import * as maplibregl from "maplibre-gl";
 import type { GeoJSONSource, Map as MapLibreMap } from "maplibre-gl";
 import { useEffect, useRef } from "react";
+import { canHover, fitPadding, popupAnchor } from "../../lib/layout";
 import { useStore } from "../../state/store";
 import { FIRST_LABEL_LAYER } from "../map/basemap";
+import { clearPadding } from "../map/home";
 import { reachResult, useBaseSites } from "./data";
 import { circlesGeoJson, pointsGeoJson } from "./geo";
 import { earlySentence, percentOne, townLabel } from "./sentences";
@@ -34,17 +36,27 @@ function reducedMotion(): boolean {
   return window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 }
 
-// Room for the glass panels over the globe: the planner's panel on the left (420 px wide, 20 px in)
-// and, when an area is selected, its insights panel on the right. Narrow windows get a plain margin.
-function fitPadding() {
-  const wide = window.innerWidth >= 1000;
-  const side = 460;
-  return {
-    top: 80,
-    bottom: 110,
-    left: wide ? side : 64,
-    right: wide && useStore.getState().bbox !== null ? side : 64,
-  };
+// A finger is less exact than a mouse, so on a touch screen a tap this many pixels from a marker
+// still counts as on it.
+const TAP_REACH = 12;
+
+// The ranks of the base markers at a point on the map, or near it on a touch screen.
+function ranksAt(map: MapLibreMap, point: { x: number; y: number }): number[] {
+  if (!map.getLayer(BASE_MARKER_LAYER)) return [];
+  const reach = canHover() ? 0 : TAP_REACH;
+  const features = map.queryRenderedFeatures(
+    [
+      [point.x - reach, point.y - reach],
+      [point.x + reach, point.y + reach],
+    ],
+    { layers: [BASE_MARKER_LAYER] },
+  );
+  return features.map((f) => f.properties?.rank).filter((r): r is number => typeof r === "number");
+}
+
+// True where a click or tap is on a base marker, so the map's other pop-ups leave it alone.
+export function baseMarkerAt(map: MapLibreMap, point: { x: number; y: number }): boolean {
+  return ranksAt(map, point).length > 0;
 }
 
 function escapeHtml(text: string): string {
@@ -158,8 +170,10 @@ export function useBaseLayer(map: MapLibreMap | null): void {
   useEffect(() => {
     if (!map) return;
     if (on && !wasOn.current) {
+      clearPadding(map);
       map.fitBounds(CANADA, {
-        padding: fitPadding(),
+        // Room for the planner's own panel and, when an area is selected, its insights panel.
+        padding: fitPadding({ insights: useStore.getState().bbox !== null, bases: true }),
         animate: !reducedMotion(),
         duration: 1400,
       });
@@ -174,14 +188,15 @@ export function useBaseLayer(map: MapLibreMap | null): void {
     const popup = new maplibregl.Popup({ closeButton: true, offset: 12, className: "pyronac-popup", maxWidth: "260px" });
     popupRef.current = popup;
     const canvas = map.getCanvas();
-    const click = map.on("click", BASE_MARKER_LAYER, (e) => {
+    const click = map.on("click", (e) => {
       if (!map.dragPan.isEnabled()) return; // draw mode is on
       // Where markers overlap, the lowest number is the one drawn on top.
-      const ranks = (e.features ?? []).map((f) => f.properties?.rank).filter((r): r is number => typeof r === "number");
+      const ranks = ranksAt(map, e.point);
       if (ranks.length === 0) return;
       const rank = Math.min(...ranks);
       const site = sitesRef.current.find((s) => s.rank === rank);
       if (!site) return;
+      popup.options.anchor = popupAnchor(map.project([site.lon, site.lat]));
       popup.setLngLat([site.lon, site.lat]).setHTML(popupHtml(site)).addTo(map);
     });
     const enter = map.on("mouseenter", BASE_MARKER_LAYER, () => {

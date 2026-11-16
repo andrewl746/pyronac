@@ -33,6 +33,30 @@ body,
   height: 100%;
 }
 
+/* The app is one fixed screen. Nothing scrolls but the panels, so a drag on the globe never
+   pulls the page down to reload it or bounces it on a phone. */
+html,
+body {
+  overflow: hidden;
+  overscroll-behavior: none;
+}
+
+html {
+  /* A phone on its side would otherwise enlarge some of the text on its own. */
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* No wait for a possible double tap before a button answers. */
+a,
+button,
+input,
+select,
+[role="button"] {
+  touch-action: manipulation;
+}
+
 body {
   margin: 0;
   background: var(--bg);
@@ -104,9 +128,13 @@ body {
   transition: color 120ms, background-color 120ms;
 }
 
-.icon-btn:hover {
-  color: var(--text);
-  background: var(--glass-hover);
+/* Hover looks are for a mouse only, here and below: on a touch screen they would stay on the
+   last thing tapped. */
+@media (hover: hover) {
+  .icon-btn:hover {
+    color: var(--text);
+    background: var(--glass-hover);
+  }
 }
 
 /* Form fields and buttons: one height, one radius, hairline edges. */
@@ -125,8 +153,10 @@ select.field option {
   background: #12161d;
 }
 
-.field:hover:not(:disabled) {
-  border-color: var(--text-faint);
+@media (hover: hover) {
+  .field:hover:not(:disabled) {
+    border-color: var(--text-faint);
+  }
 }
 
 .field:disabled {
@@ -153,9 +183,11 @@ select.field {
   transition: background-color 120ms, border-color 120ms;
 }
 
-.btn:hover:not(:disabled):not([aria-disabled="true"]) {
-  background: var(--glass-hover);
-  border-color: rgba(255, 255, 255, 0.16);
+@media (hover: hover) {
+  .btn:hover:not(:disabled):not([aria-disabled="true"]) {
+    background: var(--glass-hover);
+    border-color: rgba(255, 255, 255, 0.16);
+  }
 }
 
 .btn:disabled,
@@ -172,9 +204,11 @@ select.field {
   font-weight: 600;
 }
 
-.btn-primary:hover:not(:disabled) {
-  background: var(--focus);
-  border-color: var(--focus);
+@media (hover: hover) {
+  .btn-primary:hover:not(:disabled) {
+    background: var(--focus);
+    border-color: var(--focus);
+  }
 }
 
 /* A text-only button, for secondary actions next to a heading. */
@@ -187,8 +221,10 @@ select.field {
   cursor: pointer;
 }
 
-.btn-text:hover:not(:disabled) {
-  color: var(--text);
+@media (hover: hover) {
+  .btn-text:hover:not(:disabled) {
+    color: var(--text);
+  }
 }
 
 .btn-text:disabled {
@@ -229,6 +265,44 @@ select.field {
    the button. */
 .segmented-option:focus-visible {
   outline-offset: -2px;
+}
+
+/* Touch screens: targets a finger can hit, and 16px text in the fields, because below that iOS
+   Safari zooms the whole page in when a field gets the focus. */
+@media (pointer: coarse) {
+  .icon-btn {
+    width: 40px;
+    height: 40px;
+  }
+
+  .field {
+    height: 38px;
+    padding: 0 8px;
+    font-size: 16px;
+  }
+
+  .btn {
+    height: 38px;
+    padding: 0 14px;
+    font-size: 13px;
+  }
+
+  /* The same text, with room around it to tap. */
+  .btn-text {
+    margin: -10px 0;
+    padding: 10px 0 10px 14px;
+    font-size: 12px;
+  }
+
+  .segmented {
+    height: 38px;
+  }
+
+  .switch::after {
+    content: "";
+    position: absolute;
+    inset: -11px -6px;
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -291,6 +365,7 @@ select.field {
   /* The insights panel floats as glass on screen; on paper it is plain. */
   aside {
     position: static !important;
+    height: auto !important;
     max-height: none !important;
     transform: none !important;
     box-shadow: none !important;

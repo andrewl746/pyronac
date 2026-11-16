@@ -18,7 +18,7 @@ function shortMonth(text: string): string {
 }
 
 // Bottom of the map: Play or Pause, the current month, and a timeline of the year range with the
-// three eras shaded and a marker at each handoff between satellites.
+// three eras shaded and a marker at each handoff between satellites. layout.css places it.
 export default function TimeLapseBar({ timeLapse, enabled }: Props) {
   const meta = useMeta();
   const { months, index, phase, progress, error, play, pause, scrubTo } = timeLapse;
@@ -42,7 +42,7 @@ export default function TimeLapseBar({ timeLapse, enabled }: Props) {
     <div
       role="group"
       aria-label="Time-lapse"
-      className="map-panel absolute bottom-8 left-1/2 z-10 w-[min(520px,calc(100%-560px))] min-w-[360px] -translate-x-1/2 rounded-[4px] py-1.5 pr-5 pl-1.5 text-xs"
+      className="map-panel map-timelapse rounded-[4px] py-1.5 pr-5 pl-1.5 text-xs"
     >
       <div className="flex items-center gap-3">
         <button
@@ -51,7 +51,7 @@ export default function TimeLapseBar({ timeLapse, enabled }: Props) {
           disabled={!busy && (!enabled || n === 0)}
           title={enabled ? undefined : "Switch to Hot spots to play the time-lapse"}
           aria-label={phase === "playing" ? "Pause" : phase === "loading" ? "Stop" : "Play the time-lapse"}
-          className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-[4px] text-[var(--text)] transition-colors disabled:opacity-40 ${
+          className={`timelapse-play flex h-8 w-8 shrink-0 items-center justify-center rounded-[4px] text-[var(--text)] transition-colors disabled:opacity-40 ${
             busy ? "bg-[var(--glass-active)]" : "bg-[var(--glass-hover)] hover:bg-[var(--glass-active)]"
           }`}
         >
@@ -68,7 +68,7 @@ export default function TimeLapseBar({ timeLapse, enabled }: Props) {
         <div className="w-[104px] shrink-0 text-[12.5px] text-[var(--text)] tabular-nums">
           {phase === "loading" ? `Loading ${progress.done} of ${progress.total}` : current}
         </div>
-        <div className="relative h-7 min-w-0 flex-1">
+        <div className="timeline-track relative h-7 min-w-0 flex-1">
           {eras.map((era) => (
             <div
               key={era.id}

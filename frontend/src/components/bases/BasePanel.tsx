@@ -3,10 +3,13 @@
 // base_sites.json. Two parts in the night-globe layout:
 // - BasesTopButton: a "Fire bases" button in the bar at the top of the map, which switches it on;
 // - BasePanel: the planner's own glass panel on the left of the globe, shown while the button is on.
+//   On a phone it is a sheet that rises from the bottom (layout.css).
 // The planner is country-wide, so it is not part of the selected area's insights panel.
 // Off by default; with it off, only the button is added and nothing is loaded.
 import { useId, useState } from "react";
+import { canHover } from "../../lib/layout";
 import { Segmented } from "../controls/Segmented";
+import { SheetSize } from "../SheetSize";
 import { BaseTable } from "./BaseTable";
 import "./bases.css";
 import { reachResult, shownCount, useBaseSites } from "./data";
@@ -21,7 +24,7 @@ export function BasesTopButton() {
   const on = useBases((s) => s.on);
   const setOn = useBases((s) => s.setOn);
   return (
-    <div className="map-panel seg">
+    <div className="map-panel seg toolbar-bases">
       <button type="button" aria-pressed={on} onClick={() => setOn(!on)} className="map-btn">
         Fire bases
       </button>
@@ -37,6 +40,7 @@ export function BasePanel() {
   const setCount = useBases((s) => s.setCount);
   const setReach = useBases((s) => s.setReach);
   const [preparing, setPreparing] = useState(false);
+  const [tall, setTall] = useState(false);
   const sliderId = useId();
 
   const query = useBaseSites(on);
@@ -112,11 +116,14 @@ export function BasePanel() {
           </div>
           {sites[0] && <p className="m-0 text-[12px] text-[var(--text-dim)]">Base 1: {earlySentence(sites[0])}</p>}
         </div>
-        <BaseTable
-          sites={sites}
-          compact
-          caption={`The first ${n} candidate ${n === 1 ? "site" : "sites"}, in pick order. Click a marker on the map for its numbers.`}
-        />
+        {/* On the narrowest phones the eight columns do not fit, and the table scrolls sideways (bases.css). */}
+        <div className="bases-table-wrap">
+          <BaseTable
+            sites={sites}
+            compact
+            caption={`The first ${n} candidate ${n === 1 ? "site" : "sites"}, in pick order. ${canHover() ? "Click" : "Tap"} a marker on the map for its numbers.`}
+          />
+        </div>
         <div className="flex flex-col gap-3">
           <p className="m-0 text-[11px] text-[var(--text-faint)]">{limitsNote(data)}</p>
           <div>
@@ -133,7 +140,7 @@ export function BasePanel() {
     <>
       <section
         aria-labelledby="bases-heading"
-        className="glass glass-strong no-print bases-panel fixed top-[72px] left-5 z-20 flex w-[min(420px,calc(100vw-40px))] flex-col overflow-hidden"
+        className={`glass glass-strong no-print side-panel bases-panel ${tall ? "is-tall" : ""}`}
       >
         <div className="flex items-start justify-between gap-3 px-5 pt-4 pb-3">
           <div className="min-w-0">
@@ -142,11 +149,14 @@ export function BasePanel() {
             </h2>
             <p className="m-0 mt-0.5 text-[11px] text-[var(--text-faint)]">Canada · best-coverage sites for small fire bases</p>
           </div>
-          <button type="button" aria-label="Hide the bases" onClick={() => setOn(false)} className="icon-btn -mt-1 -mr-2">
-            <svg aria-hidden="true" width="12" height="12" viewBox="0 0 12 12">
-              <path d="M2 2l8 8M10 2l-8 8" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" />
-            </svg>
-          </button>
+          <div className="-mr-2 flex shrink-0">
+            <SheetSize tall={tall} onChange={setTall} />
+            <button type="button" aria-label="Hide the bases" onClick={() => setOn(false)} className="icon-btn -mt-1">
+              <svg aria-hidden="true" width="12" height="12" viewBox="0 0 12 12">
+                <path d="M2 2l8 8M10 2l-8 8" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" />
+              </svg>
+            </button>
+          </div>
         </div>
         <div className="sheet-sections min-h-0 flex-1 overflow-y-auto px-5 pb-5">
           {/* What a base is, in general terms. No ranges or speeds: we have no source for them. */}
