@@ -1,7 +1,7 @@
-/* Pyronac theme. Dark only. Variables are from MASTERSPEC.md section 8.
+/* Pyronac theme. Dark only.
    Use these everywhere instead of hard-coded colours. */
 :root {
-  /* Values retuned for the night-globe look; names are from MASTERSPEC.md section 8. */
+  /* Values retuned for the night-globe look. */
   --bg: #07090c;
   --panel: #0b0e12;
   --panel-2: #12161b;

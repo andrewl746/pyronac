@@ -1,4 +1,4 @@
-"""GET /api/grid: harmonized totals per cell for a box and a period. Feeds the map. MASTERSPEC section 7."""
+"""GET /api/grid: harmonized totals per cell for a box and a period. Feeds the map."""
 from fastapi import APIRouter, Depends, HTTPException, Query
 
 from .. import db, periods

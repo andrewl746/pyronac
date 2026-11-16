@@ -1,4 +1,4 @@
-// Extra #3 in MASTERSPEC.md section 13: the anomaly map. Each cell is coloured by how unusual the
+// The anomaly map. Each cell is coloured by how unusual the
 // chosen month is there, compared with the same month in every other complete year since 2003.
 // Five classes on a diverging blue-to-orange scale, which stays readable with colour vision
 // deficiency. The classes use the same thresholds and words as the label in /api/compare.

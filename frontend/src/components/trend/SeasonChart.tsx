@@ -1,5 +1,5 @@
 // The centre of each year's fire season (average month, weighted by harmonized count), by year.
-// Years with no fire leave a gap. MASTERSPEC.md section 13, item 5.
+// Years with no fire leave a gap.
 import { CartesianGrid, Line, LineChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 import type { TrendResponse } from "../../api/types";
 import { monthName, monthShort } from "../../lib/format";

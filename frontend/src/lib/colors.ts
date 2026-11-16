@@ -1,4 +1,4 @@
-// Colour ramps for the calendar, the map and the legends. MASTERSPEC.md section 8, "Colour".
+// Colour ramps for the calendar, the map and the legends.
 import { interpolateCividis, interpolateInferno } from "d3-scale-chromatic";
 import type { Ramp } from "../state/store";
 

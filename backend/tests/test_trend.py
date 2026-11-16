@@ -1,4 +1,4 @@
-"""GET /api/trend on the fixtures. Check B12 of MASTERSPEC section 12."""
+"""GET /api/trend on the fixtures."""
 import pytest
 from scipy.stats import linregress
 

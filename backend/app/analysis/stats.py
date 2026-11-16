@@ -1,4 +1,4 @@
-"""The maths behind /api/compare and /api/trend. MASTERSPEC section 7.
+"""The maths behind /api/compare and /api/trend.
 
 Pure functions: no database, no FastAPI. The routers fetch the numbers and call these.
 """

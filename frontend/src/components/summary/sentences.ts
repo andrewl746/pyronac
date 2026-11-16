@@ -1,5 +1,5 @@
-// The plain-language summary, built from the numbers by fixed templates, never by an AI model
-// (MASTERSPEC.md section 13, item 2): the busiest year, the usual peak month, how this month
+// The plain-language summary, built from the numbers by fixed templates, never by an AI model:
+// the busiest year, the usual peak month, how this month
 // compares, and the trend.
 import type { CalendarMonth, TrendResponse } from "../../api/types";
 import { formatCount, monthName } from "../../lib/format";

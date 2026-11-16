@@ -1,4 +1,4 @@
-"""GET /api/trend: yearly totals for a box, harmonized against raw, with fitted trends. MASTERSPEC section 7."""
+"""GET /api/trend: yearly totals for a box, harmonized against raw, with fitted trends."""
 from fastapi import APIRouter, Depends, HTTPException, Query
 
 from .. import db, periods

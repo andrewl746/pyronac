@@ -1,4 +1,4 @@
-// The selected box on the map, and the rectangle the user drags in draw mode (MASTERSPEC.md section 8).
+// The selected box on the map, and the rectangle the user drags in draw mode.
 import type { Feature, FeatureCollection, Polygon } from "geojson";
 import type { GeoJSONSource, LngLat, Map as MapLibreMap, MapMouseEvent, Point } from "maplibre-gl";
 import { useEffect, useState } from "react";

@@ -1,7 +1,5 @@
 """The area box that every endpoint takes.
 
-Copied from MASTERSPEC.md Appendix A. Change only with team agreement.
-
 Use it like this:
 
     from fastapi import Depends

@@ -12,7 +12,7 @@ The error is the median absolute percentage error, as a fraction: 0.12 means the
 typical total is 12% away from what Suomi NPP reported. "Raw" is the MODIS count
 with nothing done to it.
 
-Prints the tables for docs/METHOD.md and writes the headline numbers into
+Prints the validation tables and writes the headline numbers into
 harmonization.json. build.py also calls evaluate(), so a rebuild keeps them.
 """
 import argparse

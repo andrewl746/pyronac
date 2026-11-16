@@ -1,4 +1,4 @@
-"""GET /api/meta: what data is loaded and how it was harmonized. MASTERSPEC section 7."""
+"""GET /api/meta: what data is loaded and how it was harmonized."""
 from fastapi import APIRouter
 
 from .. import config, db, periods

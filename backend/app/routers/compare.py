@@ -1,4 +1,4 @@
-"""GET /api/compare: one month against the same calendar month in other years. Feature F4. MASTERSPEC section 7."""
+"""GET /api/compare: one month against the same calendar month in other years."""
 import calendar
 
 from fastapi import APIRouter, Depends, HTTPException, Query

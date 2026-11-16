@@ -1,5 +1,5 @@
 // Fake API answers so the frontend works before the backend exists.
-// Copied from MASTERSPEC.md Appendix A. The numbers are invented but have the right shape.
+// The numbers are invented but have the right shape.
 import type {
   AnomalyResponse,
   Bbox,

@@ -1,10 +1,10 @@
-// Box and grid geometry (MASTERSPEC.md sections 5.4, 7 and 8).
+// Box and grid geometry.
 import type { FeatureCollection, Polygon } from "geojson";
 import type { Bbox } from "../api/types";
 
 // The map's view when no box is selected.
 export const WORLD: Bbox = { west: -180, south: -90, east: 180, north: 90 };
-// ...asked for in 1 degree cells (MASTERSPEC.md section 8).
+// ...asked for in 1 degree cells.
 export const WORLD_STEP = 10;
 
 // Degrees times 10, rounded to 6 places first so -114.4 * 10 is -1144 and not -1144.0000000000002.

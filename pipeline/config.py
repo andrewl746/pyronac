@@ -1,7 +1,4 @@
-"""Constants shared by every pipeline script.
-
-Copied from MASTERSPEC.md Appendix A. Change only with team agreement.
-"""
+"""Constants shared by every pipeline script."""
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]

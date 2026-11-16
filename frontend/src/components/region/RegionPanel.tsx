@@ -5,7 +5,7 @@ import { snapBbox } from "../../lib/geo";
 import { useStore } from "../../state/store";
 import { sameBox, usePresetName } from "./presetName";
 
-// MASTERSPEC.md section 8, region panel: presets, four edges with Apply, and Clear. Shown as a glass
+// The region panel: presets, four edges with Apply, and Clear. Shown as a glass
 // dropdown over the globe: the presets, Whole globe (clears the box), Draw area, and Custom… which
 // opens the four edges. The inputs always show the current box, including one drawn on the map.
 

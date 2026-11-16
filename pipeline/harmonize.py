@@ -1,7 +1,7 @@
 """Harmonization: put every month on the VIIRS Suomi NPP scale.
 
 Method "ml" when the model in ml_model.py can be fitted: it estimates the MODIS era cell by cell.
-Otherwise method "ratio" (MASTERSPEC.md section 6 and Andrew L's task sheet, step 2), described here.
+Otherwise method "ratio", described here.
 
 For each 1 degree block and each calendar month, the ratio of Suomi NPP to MODIS
 detections over the months when both flew. A block is used only when it has at least

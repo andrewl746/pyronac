@@ -1,4 +1,4 @@
-// Save an on-screen SVG as a PNG image. MASTERSPEC.md section 8, "Downloads".
+// Save an on-screen SVG as a PNG image.
 
 // What an SVG drawn as an image loses, because it can no longer see the page's CSS.
 const STYLE_PROPERTIES = [

@@ -3,7 +3,7 @@
 //   Imagery: NASA Black Marble 2016 (VIIRS night lights), served by NASA GIBS. Public domain,
 //   credited in the attribution.
 //   Borders and labels: OpenFreeMap vector tiles (OpenMapTiles schema, OpenStreetMap data).
-// This replaces the dark vector style named in MASTERSPEC.md section 8: the night side of Earth,
+// This replaces the dark vector style first planned: the night side of Earth,
 // where fires read as lights, by Yuvi's choice in the UI refresh.
 import type { ExpressionSpecification, StyleSpecification } from "maplibre-gl";
 

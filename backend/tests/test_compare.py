@@ -1,4 +1,4 @@
-"""GET /api/compare on the fixtures. Checks B9, B10 and B11 of MASTERSPEC section 12."""
+"""GET /api/compare on the fixtures."""
 import numpy as np
 import pytest
 

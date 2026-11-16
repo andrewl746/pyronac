@@ -12,7 +12,6 @@ Writes  <out>/points/year=YYYY/*.parquet
         <out>/harmonization.json
 
 The SQL in this file is the definition of the cleaning rules and the grid.
-Copied from MASTERSPEC.md Appendix A. Change the rules only with team agreement.
 """
 import argparse
 import shutil

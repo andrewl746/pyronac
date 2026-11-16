@@ -26,7 +26,7 @@ export function monthRange(firstMonth: string, lastMonth: string, startYear: num
   return months;
 }
 
-// The period the map shows (MASTERSPEC.md section 8): the selected month if there is one,
+// The period the map shows: the selected month if there is one,
 // otherwise January of startYear to December of endYear.
 export function mapPeriod(selected: YearMonth | null, startYear: number, endYear: number) {
   if (selected) {

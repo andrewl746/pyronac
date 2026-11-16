@@ -1,5 +1,4 @@
 // The only place the frontend talks to the backend.
-// Copied from MASTERSPEC.md Appendix A. Change only with team agreement.
 import { mock } from "./mock";
 import type {
   AnomalyResponse,

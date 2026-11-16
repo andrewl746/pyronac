@@ -31,7 +31,7 @@ import TrendLegend from "./TrendLegend";
 // Importing it with ?url makes Vite copy it into dist/assets; this points MapLibre at that copy.
 maplibregl.setWorkerUrl(workerUrl);
 
-// The opening view from MASTERSPEC.md section 8: the globe, centred over Canada.
+// The opening view: the globe, centred over Canada.
 const START = { center: [-100, 55] as [number, number], zoom: 1.8 };
 
 // "fire" shows the hot spots (colour ramp). "anomaly" shows how unusual one month is (extra #3).

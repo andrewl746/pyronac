@@ -1,4 +1,4 @@
-// The one shared piece of UI state. Copied from MASTERSPEC.md Appendix A.
+// The one shared piece of UI state.
 // Change only with team agreement.
 import { create } from "zustand";
 import type { Bbox, Mode, YearMonth } from "../api/types";

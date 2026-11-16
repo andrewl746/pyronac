@@ -13,6 +13,8 @@ built from two NASA satellite instruments that count fire differently.**
 NASA FIRMS MODIS and VIIRS hot spots, harmonized to the Suomi NPP VIIRS scale, in a web app for
 emergency managers. Built for the NASA Space Apps Challenge 2026, Toronto.
 
+**Live: [pyronac.andrewli.app](https://pyronac.andrewli.app)**
+
 ## The problem
 
 Satellites record fires as "hot spots". **MODIS** (Terra and Aqua, since 2000) has pixels about
@@ -61,8 +63,7 @@ Suomi NPP actually reported (median absolute percentage error):
 | India (ratio method) | 10.0% | 2.5% |
 | Brazil (ratio method) | 5.2% | 5.3% |
 
-The full method, the versions we tried and dropped, and the limits are in
-[docs/METHOD.md](docs/METHOD.md).
+How it works, in plain words: [docs/METHOD.md](docs/METHOD.md).
 
 ## Data
 
@@ -73,7 +74,7 @@ NASA FIRMS active fire data, exactly:
 
 Canada, India and Brazil; 42,742,826 detections in the final build. Basemap: NASA Black Marble via
 GIBS, with labels from OpenFreeMap, OpenMapTiles and OpenStreetMap. Town list for the base planner:
-GeoNames. Details in [docs/DATA_NOTES.md](docs/DATA_NOTES.md).
+GeoNames.
 
 ## Architecture
 
@@ -86,8 +87,7 @@ flowchart LR
 ```
 
 Plain Python scripts and DuckDB build Parquet files on disk; there is no database server. The
-backend reads them read-only; the frontend calls it through the Vite proxy. The contracts between
-the parts are in [MASTERSPEC.md](MASTERSPEC.md).
+backend reads them read-only; the frontend calls it through the Vite proxy.
 
 ## Quickstart
 
@@ -142,22 +142,18 @@ python pipeline/build.py                     # real data -> data/processed/
 
 The yearly country files for 2003 to 2025 are public and need no key. Downloads skip files that
 already exist and are not empty, and an interrupted download is left as a `.part` file that never
-looks complete. The 2026 files need a signed-in FIRMS archive request: see section 5.1 of the
-master spec. Check the downloader with `cd pipeline && python -m unittest test_download`.
+looks complete. The 2026 files need a signed-in archive request on the FIRMS site. Check the downloader with `cd pipeline && python -m unittest test_download`.
 
 ## Team
 
 Andrew L, Vlad, Yuvi, Andrew N, Angela and Sam, at the NASA Space Apps Challenge 2026, Toronto.
-Who built which part is in section 4 of [MASTERSPEC.md](MASTERSPEC.md).
 
 ## AI use
 
-The hackathon rules ask teams to show where and how AI tools were used. Every AI-assisted session,
-what it produced and how a person checked it is recorded in [docs/AI_USE.md](docs/AI_USE.md). The
-method and the decisions are the team's.
+The team used AI coding assistants (Claude Code and OpenAI Codex) throughout. Their work was
+checked by running it: tests, builds and the app in a browser. The method and the decisions are
+the team's.
 
 ## More
 
-- [MASTERSPEC.md](MASTERSPEC.md): the project spec, contracts and task sheets
 - [docs/METHOD.md](docs/METHOD.md): the harmonization method, validation and the base planner
-- [docs/DATA_NOTES.md](docs/DATA_NOTES.md): where the data comes from and how it was cleaned

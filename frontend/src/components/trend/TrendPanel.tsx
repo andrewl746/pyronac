@@ -1,4 +1,4 @@
-// Yearly totals, harmonized against raw, with the trend sentence. MASTERSPEC.md section 13, item 1.
+// Yearly totals, harmonized against raw, with the trend sentence.
 import { useMeta, useTrend } from "../../api/hooks";
 import { formatCount } from "../../lib/format";
 import { useStore } from "../../state/store";

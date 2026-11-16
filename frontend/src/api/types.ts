@@ -1,4 +1,4 @@
-// Shared API types. Copied from MASTERSPEC.md Appendix A. Change only with team agreement.
+// Shared API types.
 
 export type Bbox = { west: number; south: number; east: number; north: number };
 export type Era = "modis" | "snpp" | "noaa20";

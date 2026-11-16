@@ -1,4 +1,4 @@
-"""Download public yearly FIRMS country CSVs (MASTERSPEC.md section 5.1).
+"""Download public yearly FIRMS country CSVs.
 
 Run from the repo root, for example:
     python pipeline/download.py --country canada --years 2023 --sources modis,viirs-snpp

@@ -29,7 +29,7 @@ function Logo() {
 
 // The globe fills the window. On top, as glass: the logo (top left), the map tools (top centre,
 // in MapView), the menu (top right), the insights for a selected area (right), and the legend
-// and time-lapse (bottom, in MapView). MASTERSPEC.md section 8 layout, reworked for the demo.
+// and time-lapse (bottom, in MapView).
 export default function App() {
   const meta = useMeta();
 

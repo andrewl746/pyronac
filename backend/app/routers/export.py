@@ -1,4 +1,4 @@
-"""GET /api/points/count and /api/points.csv: the raw detections in a box. MASTERSPEC section 7.
+"""GET /api/points/count and /api/points.csv: the raw detections in a box.
 
 These are what the satellites reported, not harmonized values.
 """

@@ -1,4 +1,4 @@
-"""GET /api/calendar and /api/calendar.csv: monthly totals for a box. MASTERSPEC section 7."""
+"""GET /api/calendar and /api/calendar.csv: monthly totals for a box."""
 import csv
 import io
 

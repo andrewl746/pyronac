@@ -1,4 +1,4 @@
-// The trend in words, built from /api/trend by fixed templates (MASTERSPEC.md section 13, item 1).
+// The trend in words, built from /api/trend by fixed templates.
 // This is the text alternative to the trend chart, so it must stand on its own.
 import type { MetaResponse, TrendFit, TrendResponse } from "../../api/types";
 import { formatCount } from "../../lib/format";
@@ -59,8 +59,8 @@ export function trendSentence(data: TrendResponse): string {
   return `${raw} ${harmonized}`;
 }
 
-// "The fire season moved about 4 days earlier per decade from 2003 to 2025." (MASTERSPEC.md section 13,
-// item 5.) Null when the API has no season fit (fewer than 5 years with fire).
+// "The fire season moved about 4 days earlier per decade from 2003 to 2025."
+// Null when the API has no season fit (fewer than 5 years with fire).
 export function seasonSentence(data: TrendResponse): string | null {
   const shift = data.season_shift;
   if (!shift) return null;

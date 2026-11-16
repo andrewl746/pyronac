@@ -1,4 +1,4 @@
-// One TanStack Query hook per `api` function (MASTERSPEC.md section 8).
+// One TanStack Query hook per `api` function.
 // The query key is the function name followed by its arguments.
 // Every hook except useMeta is disabled while `bbox` is null. The map's world view
 // passes the whole-world box to useGrid, so it is never null there.

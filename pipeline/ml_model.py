@@ -9,7 +9,7 @@ The model predicts, for a cell and month, how many hot spots Suomi NPP reported,
 Every input comes from MODIS detections alone, so the model can be applied to 2003 to 2011.
 It is HistGradientBoostingRegressor(loss="poisson"), split by year, never at random.
 
-Rule (MASTERSPEC.md, Andrew L step 3): versions are chosen inside 2012 to 2019 only. The years
+Rule: versions are chosen inside 2012 to 2019 only. The years
 2020 to 2025 are used once, for the final comparison with the ratio method, never for tuning.
 
 MODIS misses some fires completely. Suomi NPP detections in a cell and month with no MODIS

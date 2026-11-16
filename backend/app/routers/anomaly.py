@@ -1,4 +1,4 @@
-"""GET /api/anomaly: how unusual one month is, cell by cell. Feeds the anomaly map. MASTERSPEC section 7."""
+"""GET /api/anomaly: how unusual one month is, cell by cell. Feeds the anomaly map."""
 import numpy as np
 from fastapi import APIRouter, Depends, HTTPException, Query
 

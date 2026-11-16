@@ -1,7 +1,6 @@
 """One read-only DuckDB connection over the Parquet files.
 
 Every router gets its data through query() or stream(). Do not open other connections.
-Copied from MASTERSPEC.md Appendix A. Change only with team agreement.
 
 Two views are available to SQL:
 

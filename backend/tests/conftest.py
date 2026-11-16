@@ -1,4 +1,4 @@
-"""Tests always run on the fake fixtures. Copied from MASTERSPEC.md Appendix A."""
+"""Tests always run on the fake fixtures."""
 import os
 from pathlib import Path
 

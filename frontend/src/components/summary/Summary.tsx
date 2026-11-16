@@ -1,4 +1,4 @@
-// Three or four sentences about the box, from fixed templates. MASTERSPEC.md section 13, item 2.
+// Three or four sentences about the box, from fixed templates.
 // Uses the same queries as the calendar, compare and trend panels, so it adds no requests of its own.
 import { useCalendar, useCompare, useMeta, useTrend } from "../../api/hooks";
 import { useStore } from "../../state/store";

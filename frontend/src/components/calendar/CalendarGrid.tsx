@@ -1,5 +1,5 @@
 // The calendar as an SVG: one row per year (newest at the top), one column per month,
-// and a last column with each year's total. MASTERSPEC.md section 8, "Calendar".
+// and a last column with each year's total.
 import { useMemo, useRef, useState } from "react";
 import type { KeyboardEvent } from "react";
 import type { CalendarMonth, Era, Mode, YearMonth } from "../../api/types";

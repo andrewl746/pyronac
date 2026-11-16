@@ -1,4 +1,4 @@
-"""The three month values every endpoint needs, computed one way (MASTERSPEC section 7).
+"""The three month values every endpoint needs, computed one way.
 
 data_through         the data_through date in harmonization.json
 last_month           the month data_through falls in

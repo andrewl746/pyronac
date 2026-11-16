@@ -1,7 +1,4 @@
-"""Backend settings and constants.
-
-Copied from MASTERSPEC.md Appendix A. Change only with team agreement.
-"""
+"""Backend settings and constants."""
 import os
 from pathlib import Path
 
