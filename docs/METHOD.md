@@ -1,8 +1,5 @@
 # How Pyronac works
 
-This is the short version. The full write-up, with every test we ran and every version we dropped,
-is [in the repo history](https://github.com/andrewl746/pyronac/blob/d2faf8f1ffc2615bca3320d61f26a40877a086f0/docs/METHOD.md).
-
 ## The problem
 
 NASA spots fires from orbit with two kinds of instruments:
@@ -94,10 +91,3 @@ not a plan: the data doesn't know about roads, water or land cover.
   Canada's estimates are about 15% away from what VIIRS saw.
 - We assume MODIS behaved the same way before 2012 as after. We can't check that against VIIRS.
 - Only Canada, India and Brazil have been tested.
-
-## Where the code is
-
-- `pipeline/harmonize.py`: the ratio method
-- `pipeline/ml_model.py`: the model and the comparison between the two
-- `pipeline/validate.py`: the 2020 to 2025 test
-- `pipeline/base_sites.py`: the fire base planner
