@@ -155,6 +155,10 @@ export function BasePanel() {
             helicopter crew. The recon drones spot new fires early, the firefighting drones take on the small ones,
             and the crew flies out to the rest. Reach is how far from the base that crew is expected to respond.
           </p>
+          <p className="m-0 mt-2 text-[12px] text-[var(--text-dim)]">
+            Canada only. In Punjab most hot spots are crop burning, and in the southern Amazon most are fires set to
+            clear land.
+          </p>
           {body}
         </div>
       </section>
