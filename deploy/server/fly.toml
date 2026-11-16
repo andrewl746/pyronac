@@ -23,6 +23,10 @@ primary_region = "yyz"  # Toronto
     path = "/api/health"
     timeout = "5s"
 
+# If the app ever crashes, start it again, however many times (Fly's default gives up after 10).
+[[restart]]
+  policy = "always"
+
 [[vm]]
   size = "shared-cpu-1x"
   memory = "1gb"
