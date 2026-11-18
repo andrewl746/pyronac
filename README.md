@@ -32,7 +32,7 @@ stopped delivering data on 2 November 2026, and the record continues on NOAA-20.
 | | |
 |---|---|
 | ![Northwest Territories selected, with the plain-words summary and the fire calendar](docs/images/region.png) | ![The same area in raw counts: the years before 2012 drop to a fraction](docs/images/raw.png) |
-| **Pick an area, read its fire history.** Choose a preset or draw a box on the globe. A plain-words summary (from a fixed template, not an AI model) and a calendar of every month from 2003 to now, one row per year. | **Flip to raw and watch the false jump appear.** In the Northwest Territories, 2011 reads 22,373 hot spots harmonized and 3,145 raw. From February 2012 both records are the Suomi NPP count. |
+| **Pick an area, read its fire history.** Choose a preset or draw a box on the globe. A plain-words summary (from a fixed template) and a calendar of every month from 2003 to now, one row per year. | **Flip to raw and watch the false jump appear.** In the Northwest Territories, 2011 reads 22,373 hot spots harmonized and 3,145 raw. From February 2012 both records are the Suomi NPP count. |
 | ![The comparison chart: every year against the median](docs/images/compare.png) | ![Trend view over Canada: cells coloured by how fast their yearly count is rising or falling](docs/images/trend.png) |
 | **Compare with other years.** A chosen month or year against the median and usual range for that area, with a sentence such as how far above the usual October it is. | **Trend and anomaly maps.** Each cell coloured by its change per year (2003 to 2025) or by how unusual the selected month is. Over all of Canada the harmonized count rose about 84% per decade; counted raw, about 129%. |
 | ![The fire base planner: 25 numbered candidate sites across Canada](docs/images/bases.png) | ![The menu: harmonized or raw switch, palette, years, CSV and PNG downloads, and the method note](docs/images/menu.png) |
@@ -147,12 +147,6 @@ looks complete. The 2026 files need a signed-in archive request on the FIRMS sit
 ## Team
 
 Andrew L, Vlad, Yuvi, Andrew N, Angela and Sam, at the NASA Space Apps Challenge 2026, Toronto.
-
-## AI use
-
-The team used AI coding assistants (Claude Code and OpenAI Codex) throughout. Their work was
-checked by running it: tests, builds and the app in a browser. The method and the decisions are
-the team's.
 
 ## More
 
